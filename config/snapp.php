@@ -44,4 +44,15 @@ return [
         'credentials_path' => env('FCM_CREDENTIALS_PATH', ''),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Deep-link app (vedi plan §Appendice A)
+    |--------------------------------------------------------------------------
+    | scheme  Schema custom dell'app (es. snapp://...). Usato negli URL delle
+    |         email di verifica/reset per riportare l'utente nell'app.
+    */
+    'deep_link' => [
+        'scheme' => env('SNAPP_DEEP_LINK_SCHEME', 'snapp'),
+    ],
+
 ];
