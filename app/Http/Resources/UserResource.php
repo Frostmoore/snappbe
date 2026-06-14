@@ -21,6 +21,9 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'role' => $this->role->value,
             'membership_level' => $this->membership_level,
+            // Ruolo SNA esatto (slug + nome dal sito WordPress), distinto dal ruolo app.
+            'wp_role' => $this->wp_role,
+            'wp_role_label' => $this->wp_role_label,
             'email_verified' => ! is_null($this->email_verified_at),
             'created_at' => $this->created_at,
         ];

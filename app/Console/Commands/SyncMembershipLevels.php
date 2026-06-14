@@ -24,15 +24,16 @@ class SyncMembershipLevels extends Command
 
         WpAccount::query()->whereHas('links')->with('links.user')->chunkById(100, function ($accounts) use ($client, $linker, &$synced) {
             foreach ($accounts as $wpAccount) {
-                $identifier = $wpAccount->email ?: $wpAccount->username;
-                if (! $identifier) {
+                if (! $wpAccount->wp_user_id) {
                     continue;
                 }
 
                 try {
-                    $data = $client->verifyAccount($identifier);
+                    // Re-sync senza password: endpoint info autenticato via HMAC,
+                    // identificato per wp_user_id (no enumerazione per email).
+                    $data = $client->accountInfo((int) $wpAccount->wp_user_id);
                 } catch (Throwable $e) {
-                    $this->warn("WordPress non raggiungibile per {$identifier}: " . $e->getMessage());
+                    $this->warn("WordPress non raggiungibile per #{$wpAccount->wp_user_id}: " . $e->getMessage());
                     continue;
                 }
 
@@ -40,10 +41,23 @@ class SyncMembershipLevels extends Command
                     continue;
                 }
 
+                $roles    = $data['roles'] ?? [];
+                $roleSlug = isset($roles[0]) ? (string) $roles[0] : null;
+                $roleLabel = null;
+                if ($roleSlug) {
+                    try {
+                        $roleLabel = $client->rolesMap()[$roleSlug] ?? null;
+                    } catch (Throwable $e) {
+                        $roleLabel = null;
+                    }
+                }
+
                 $wpAccount->update([
                     'level'       => $data['level'] ?? null,
                     'level_label' => $data['level_label'] ?? null,
-                    'roles'       => $data['roles'] ?? [],
+                    'roles'       => $roles,
+                    'role'        => $roleSlug,
+                    'role_label'  => $roleLabel,
                     'synced_at'   => now(),
                 ]);
 

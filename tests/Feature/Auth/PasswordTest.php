@@ -53,11 +53,11 @@ class PasswordTest extends TestCase
 
         $this->postJson('/api/v1/auth/password/change', [
             'current_password' => 'Vecchia123!',
-            'password' => 'Nuova123!',
-            'password_confirmation' => 'Nuova123!',
+            'password' => 'NuovaPass123!',
+            'password_confirmation' => 'NuovaPass123!',
         ])->assertOk();
 
-        $this->assertTrue(Hash::check('Nuova123!', $user->fresh()->password));
+        $this->assertTrue(Hash::check('NuovaPass123!', $user->fresh()->password));
     }
 
     public function test_change_password_requires_correct_current_password(): void
@@ -67,8 +67,33 @@ class PasswordTest extends TestCase
 
         $this->postJson('/api/v1/auth/password/change', [
             'current_password' => 'sbagliata',
-            'password' => 'Nuova123!',
-            'password_confirmation' => 'Nuova123!',
+            'password' => 'NuovaPass123!',
+            'password_confirmation' => 'NuovaPass123!',
         ])->assertStatus(422);
+    }
+
+    public function test_confirm_password_accepts_correct_password(): void
+    {
+        $user = User::factory()->create(['password' => Hash::make('Vecchia123!')]);
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/auth/password/confirm', ['password' => 'Vecchia123!'])
+            ->assertOk();
+    }
+
+    public function test_confirm_password_rejects_wrong_password(): void
+    {
+        $user = User::factory()->create(['password' => Hash::make('Vecchia123!')]);
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/auth/password/confirm', ['password' => 'sbagliata'])
+            ->assertStatus(422)
+            ->assertJsonStructure(['message', 'errors' => ['password']]);
+    }
+
+    public function test_confirm_password_requires_auth(): void
+    {
+        $this->postJson('/api/v1/auth/password/confirm', ['password' => 'qualsiasi'])
+            ->assertStatus(401);
     }
 }

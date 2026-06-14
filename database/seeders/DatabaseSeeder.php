@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AccessLevelSeeder::class,
             SuperAdminSeeder::class,
+            DemoContentSeeder::class,
         ]);
     }
 }

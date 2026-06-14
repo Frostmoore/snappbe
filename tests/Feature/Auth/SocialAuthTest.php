@@ -16,6 +16,9 @@ class SocialAuthTest extends TestCase
 
     private function mockSocialite(string $id, ?string $email, string $name = 'Mario Rossi'): void
     {
+        // Percorso reale: attivo solo con credenziali configurate.
+        config(['snapp.oauth.google.client_id' => 'test-client-id']);
+
         $socialUser = Mockery::mock(SocialiteUser::class);
         $socialUser->shouldReceive('getId')->andReturn($id);
         $socialUser->shouldReceive('getEmail')->andReturn($email);
@@ -64,11 +67,38 @@ class SocialAuthTest extends TestCase
 
     public function test_invalid_token_returns_401(): void
     {
+        config(['snapp.oauth.google.client_id' => 'test-client-id']);
         $provider = Mockery::mock(Provider::class);
         $provider->shouldReceive('stateless')->andReturnSelf();
         $provider->shouldReceive('userFromToken')->andThrow(new \RuntimeException('invalid'));
         Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
 
         $this->postJson('/api/v1/auth/social/google', ['token' => 'bad'])->assertStatus(401);
+    }
+
+    public function test_mock_social_login_creates_user_when_enabled(): void
+    {
+        // Nessuna credenziale reale + mock attivo (dev).
+        config(['snapp.oauth.google.client_id' => '', 'snapp.oauth.mock' => true]);
+
+        $this->postJson('/api/v1/auth/social/google', ['token' => 'mock'])
+            ->assertOk()
+            ->assertJsonStructure(['data' => ['token', 'user']])
+            ->assertJsonPath('data.user.email', 'google.mock@sna.it')
+            ->assertJsonPath('data.user.email_verified', true);
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'google.mock@sna.it',
+            'provider' => 'google',
+            'provider_id' => 'mock-google',
+        ]);
+    }
+
+    public function test_social_login_not_configured_returns_501(): void
+    {
+        // Né credenziali reali né mock → non configurato.
+        config(['snapp.oauth.google.client_id' => '', 'snapp.oauth.mock' => false]);
+
+        $this->postJson('/api/v1/auth/social/google', ['token' => 'mock'])->assertStatus(501);
     }
 }

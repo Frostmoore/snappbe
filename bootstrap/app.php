@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'wp.signature' => \App\Http\Middleware\VerifyWordPressSignature::class,
+            // Override API di `verified`: 403 JSON invece del redirect web di default.
+            'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

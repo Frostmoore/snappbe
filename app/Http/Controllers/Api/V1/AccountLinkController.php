@@ -24,10 +24,14 @@ class AccountLinkController extends Controller
         return ApiResponse::ok($link ? new AccountLinkResource($link) : null);
     }
 
-    /** Collega l'account SNA dato un identificativo (email o username). */
+    /** Collega l'account SNA dato identificativo (email o username) + password. */
     public function store(LinkAccountRequest $request): JsonResponse
     {
-        $link = $this->linker->link($request->user(), $request->string('identifier'));
+        $link = $this->linker->link(
+            $request->user(),
+            (string) $request->string('identifier'),
+            (string) $request->string('password'),
+        );
 
         return ApiResponse::created(new AccountLinkResource($link));
     }

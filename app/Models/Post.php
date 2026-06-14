@@ -62,4 +62,17 @@ class Post extends Model
                 $q->whereNull('published_at')->orWhere('published_at', '<=', now());
             });
     }
+
+    /** Filtra i post visibili all'utente in base al livello (anonimo = solo pubblico). */
+    public function scopeVisibleTo(Builder $query, ?User $user): Builder
+    {
+        $userWeight = $user?->membership_level ? \App\Models\AccessLevel::weightFor($user->membership_level) : 0;
+        $allowedKeys = \App\Models\AccessLevel::query()->where('weight', '<=', $userWeight)->pluck('key');
+
+        return $query->where(function (Builder $q) use ($allowedKeys) {
+            $q->whereNull('min_level')
+                ->orWhere('min_level', 'public')
+                ->orWhereIn('min_level', $allowedKeys);
+        });
+    }
 }

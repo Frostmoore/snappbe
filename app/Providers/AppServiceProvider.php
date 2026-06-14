@@ -7,6 +7,7 @@ use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -40,13 +41,29 @@ class AppServiceProvider extends ServiceProvider
         // uniforme { "data": ... } lo gestisce ApiResponse, evitando il doppio "data".
         JsonResource::withoutWrapping();
 
+        // Requisiti password FORTI, validi ovunque si usi Password::defaults()
+        // (registrazione, reset, cambio password): min 10, maiuscole+minuscole,
+        // almeno un numero e un simbolo. In produzione anche il controllo contro
+        // i data breach noti (k-anonymity HaveIBeenPwned); in dev/test lo saltiamo
+        // per non dipendere dalla rete ed evitare test flaky.
+        Password::defaults(function () {
+            $rule = Password::min(10)->mixedCase()->numbers()->symbols();
+
+            return $this->app->isProduction() ? $rule->uncompromised() : $rule;
+        });
+
         // L'email di verifica punta alla nostra rotta API firmata; il controller,
-        // dopo aver verificato, reindirizza al deep-link dell'app.
+        // dopo aver verificato, mostra una pagina di conferma. L'URL firmato è
+        // RELATIVO (validato con `signed:relative`), così possiamo anteporre un
+        // host raggiungibile dal client su cui si apre l'email (snapp.web_url),
+        // indipendente da APP_URL (che in dev punta a 10.0.2.2 per l'emulatore).
         VerifyEmail::createUrlUsing(function ($notifiable) {
-            return URL::temporarySignedRoute('verification.verify', now()->addMinutes(60), [
+            $path = URL::temporarySignedRoute('verification.verify', now()->addMinutes(60), [
                 'id' => $notifiable->getKey(),
                 'hash' => sha1($notifiable->getEmailForVerification()),
-            ]);
+            ], absolute: false);
+
+            return rtrim((string) config('snapp.web_url'), '/') . $path;
         });
 
         // L'email di reset apre direttamente il deep-link dell'app con token+email;

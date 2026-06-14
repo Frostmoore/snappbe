@@ -19,6 +19,8 @@ class LinkAccountRequest extends FormRequest
         return [
             // email o username dell'account sul sito SNA.
             'identifier' => ['required', 'string', 'max:255'],
+            // password dell'account SNA: verificata contro WordPress prima del collegamento.
+            'password'   => ['required', 'string'],
         ];
     }
 }

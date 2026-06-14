@@ -48,6 +48,30 @@ class ArticleController extends Controller
         );
     }
 
+    /** Newsletter = articoli WP della categoria "newsletter" (proxy + cache). */
+    public function newsletters(Request $request): JsonResponse
+    {
+        $page    = max(1, (int) $request->query('page', 1));
+        $perPage = min(50, max(1, (int) $request->query('per_page', 10)));
+
+        $key = ArticleCache::key("newsletters:p{$page}:pp{$perPage}");
+
+        try {
+            $data = Cache::remember($key, ArticleCache::TTL_SECONDS, fn () => $this->client->articles([
+                'page'     => $page,
+                'per_page' => $perPage,
+                'category' => 'newsletter',
+            ]));
+        } catch (WordPressUnavailableException $e) {
+            return ApiResponse::error('Servizio newsletter non disponibile.', status: 503);
+        }
+
+        return ApiResponse::ok(
+            ArticleResource::collection($data['items']),
+            ['total' => $data['total'], 'total_pages' => $data['total_pages'], 'page' => $page, 'per_page' => $perPage]
+        );
+    }
+
     public function show(int $id): JsonResponse
     {
         $key = ArticleCache::key("show:{$id}");

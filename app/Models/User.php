@@ -28,6 +28,8 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         'password',
         'role',
         'membership_level',
+        'wp_role',
+        'wp_role_label',
         'membership_synced_at',
         'provider',
         'provider_id',

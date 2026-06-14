@@ -18,6 +18,8 @@ class WpAccount extends Model
         'level',
         'level_label',
         'roles',
+        'role',
+        'role_label',
         'synced_at',
     ];
 
