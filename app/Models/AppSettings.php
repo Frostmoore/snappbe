@@ -16,7 +16,13 @@ class AppSettings extends Model
         'header_video_path',
         'logo_path',
         'primary_color',
+        'reserved_button_enabled',
     ];
+
+    protected function casts(): array
+    {
+        return ['reserved_button_enabled' => 'boolean'];
+    }
 
     /** Ritorna (o crea) l'unica riga di impostazioni. */
     public static function current(): self

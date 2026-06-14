@@ -7,6 +7,7 @@ use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -36,7 +37,7 @@ class ManageAppSettings extends Page implements HasForms
     public function mount(): void
     {
         $this->form->fill(
-            AppSettings::current()->only(['app_name', 'header_image_path', 'header_video_path', 'logo_path', 'primary_color'])
+            AppSettings::current()->only(['app_name', 'header_image_path', 'header_video_path', 'logo_path', 'primary_color', 'reserved_button_enabled'])
         );
     }
 
@@ -49,6 +50,12 @@ class ManageAppSettings extends Page implements HasForms
                         TextInput::make('app_name')->label('Nome app')->maxLength(255),
                         ColorPicker::make('primary_color')->label('Colore primario'),
                     ])->columns(2),
+                Section::make('Area riservata')
+                    ->schema([
+                        Toggle::make('reserved_button_enabled')
+                            ->label('Mostra il bottone "Area Riservata" in home')
+                            ->helperText('Se attivo, in home compare sotto i link social un bottone che porta all\'area riservata.'),
+                    ]),
                 Section::make('Header')
                     ->schema([
                         FileUpload::make('logo_path')->label('Logo')

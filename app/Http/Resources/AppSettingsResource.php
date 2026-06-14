@@ -21,6 +21,7 @@ class AppSettingsResource extends JsonResource
             'header_video' => $this->headerVideoUrl(),
             'logo' => $this->logoUrl(),
             'primary_color' => $this->primary_color,
+            'reserved_button_enabled' => (bool) $this->reserved_button_enabled,
         ];
     }
 }
