@@ -45,8 +45,14 @@ class OneSignalClient
             // OneSignal richiede la chiave lingua di default "en".
             'headings' => ['en' => $message->title],
             'contents' => ['en' => $message->body],
-            'data'     => $message->dataPayload(),
         ], $targeting);
+
+        // `data` SOLO se non vuoto: un array PHP vuoto verrebbe serializzato come
+        // `[]` (array JSON) e OneSignal lo rifiuta (si aspetta un oggetto).
+        $data = $message->dataPayload();
+        if ($data !== []) {
+            $payload['data'] = $data;
+        }
 
         if ($message->image !== null && $message->image !== '') {
             $payload['big_picture'] = $message->image;            // Android

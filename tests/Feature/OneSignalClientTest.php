@@ -42,6 +42,21 @@ class OneSignalClientTest extends TestCase
         });
     }
 
+    public function test_omits_data_when_empty(): void
+    {
+        config(['snapp.onesignal.app_id' => 'a', 'snapp.onesignal.rest_api_key' => 'k']);
+        Http::fake(['*' => Http::response(['id' => 'n', 'recipients' => 1], 200)]);
+
+        // Messaggio senza deep-link/data → il payload NON deve contenere "data"
+        // (un array vuoto diventerebbe `[]` e OneSignal lo rifiuta).
+        $this->app->make(OneSignalClient::class)->send(
+            PushMessage::make('Solo testo', 'Niente data'),
+            ['included_segments' => ['Subscribed Users']],
+        );
+
+        Http::assertSent(fn ($request) => ! array_key_exists('data', $request->data()));
+    }
+
     public function test_not_configured_does_not_send_and_returns_failure(): void
     {
         config(['snapp.onesignal.app_id' => '', 'snapp.onesignal.rest_api_key' => '']);
