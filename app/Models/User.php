@@ -31,6 +31,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         'wp_role',
         'wp_role_label',
         'membership_synced_at',
+        'sna_link_prompted_at',
         'provider',
         'provider_id',
     ];
@@ -56,6 +57,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'membership_synced_at' => 'datetime',
+            'sna_link_prompted_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
         ];

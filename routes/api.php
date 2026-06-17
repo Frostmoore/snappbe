@@ -96,6 +96,10 @@ Route::prefix('v1')->group(function () {
             Route::get('account-links', [AccountLinkController::class, 'index']);
             Route::post('account-links', [AccountLinkController::class, 'store']);
             Route::delete('account-links', [AccountLinkController::class, 'destroy']);
+            // Proposta di collegamento automatico per match email (una volta sola).
+            Route::get('account-links/suggestion', [AccountLinkController::class, 'suggestion']);
+            Route::post('account-links/suggestion/accept', [AccountLinkController::class, 'acceptSuggestion'])->middleware('throttle:10,1');
+            Route::post('account-links/suggestion/dismiss', [AccountLinkController::class, 'dismissSuggestion']);
 
             // Area riservata costruita dal pannello (tiles → sezioni → elementi), per ruolo.
             Route::get('reserved/tiles', [\App\Http\Controllers\Api\V1\ReservedController::class, 'tiles']);

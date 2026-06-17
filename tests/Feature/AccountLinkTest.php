@@ -174,4 +174,80 @@ class AccountLinkTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.wp_account.username', 'mario.rossi');
     }
+
+    private function fakeByEmail(array $override = []): void
+    {
+        Http::fake([
+            '*/snapp/v1/account-by-email' => Http::response(array_merge([
+                'wp_user_id' => 42, 'username' => 'mario', 'email' => 'mario@sna.it',
+                'roles' => ['presidente'], 'level' => 'premium', 'level_label' => 'Premium',
+            ], $override), 200),
+            '*/snapp/v1/roles' => Http::response([
+                ['key' => 'presidente', 'name' => 'Presidente', 'users' => 1],
+            ], 200),
+        ]);
+    }
+
+    public function test_suggestion_available_when_email_matches_sna(): void
+    {
+        $this->fakeByEmail();
+        Sanctum::actingAs(User::factory()->create(['email' => 'mario@sna.it']));
+
+        $this->getJson('/api/v1/account-links/suggestion')
+            ->assertOk()
+            ->assertJsonPath('data.available', true)
+            ->assertJsonPath('data.level_label', 'Premium');
+    }
+
+    public function test_suggestion_false_and_marks_prompted_when_no_match(): void
+    {
+        Http::fake(['*/snapp/v1/account-by-email' => Http::response(null, 404)]);
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/v1/account-links/suggestion')
+            ->assertOk()
+            ->assertJsonPath('data.available', false);
+
+        $this->assertNotNull($user->fresh()->sna_link_prompted_at);
+    }
+
+    public function test_suggestion_false_when_already_prompted_without_calling_wp(): void
+    {
+        Http::fake(); // nessuna risposta WP: non deve nemmeno essere chiamato
+        $user = User::factory()->create(['sna_link_prompted_at' => now()]);
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/v1/account-links/suggestion')
+            ->assertOk()
+            ->assertJsonPath('data.available', false);
+
+        Http::assertNothingSent();
+    }
+
+    public function test_accept_links_by_email_and_marks_prompted(): void
+    {
+        $this->fakeByEmail();
+        $user = User::factory()->create(['email' => 'mario@sna.it', 'membership_level' => null]);
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/account-links/suggestion/accept')
+            ->assertOk()
+            ->assertJsonPath('data.wp_account.level', 'premium');
+
+        $fresh = $user->fresh();
+        $this->assertSame('premium', $fresh->membership_level);
+        $this->assertSame('presidente', $fresh->wp_role);
+        $this->assertNotNull($fresh->sna_link_prompted_at);
+    }
+
+    public function test_dismiss_marks_prompted(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/account-links/suggestion/dismiss')->assertOk();
+
+        $this->assertNotNull($user->fresh()->sna_link_prompted_at);
+    }
 }

@@ -25,6 +25,32 @@ class AccountLinker
     }
 
     /**
+     * Dati dell'account WP che combacia con l'email (verificata) dell'utente, o
+     * null se non esiste. Serve a PROPORRE il collegamento automatico.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function findByUserEmail(User $user): ?array
+    {
+        return $this->client->accountByEmail($user->email);
+    }
+
+    /**
+     * Collega per MATCH EMAIL: l'email dell'utente app è già verificata
+     * (Google/Apple o verifica email) → è prova di possesso, non serve la password
+     * del sito. Null se nessun account WP ha quell'email.
+     */
+    public function linkByEmail(User $user): ?AccountLink
+    {
+        $data = $this->client->accountByEmail($user->email);
+        if (! $data) {
+            return null;
+        }
+
+        return $this->linkWithData($user, $data);
+    }
+
+    /**
      * Verifica le credenziali contro WP (bridge HMAC) o lancia ValidationException
      * coerente: password errata → campo `password`; account inesistente → `identifier`.
      *

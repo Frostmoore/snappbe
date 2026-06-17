@@ -125,6 +125,34 @@ class WordPressClient
     }
 
     /**
+     * Info account WP dato un EMAIL, SENZA password (solo firma). Usato per
+     * PROPORRE il collegamento automatico quando l'email (verificata) dell'utente
+     * app combacia con un account del sito. Va invocato SOLO con l'email
+     * dell'utente autenticato. Null se nessun account ha quell'email (404).
+     */
+    public function accountByEmail(string $email): ?array
+    {
+        $response = $this->signedPost('/account-by-email', ['email' => $email]);
+
+        if ($response->status() === 404) {
+            // Distingue "nessun account con questa email" (il NOSTRO endpoint)
+            // da "rotta inesistente" (plugin non ancora aggiornato): in quel caso
+            // NON è un no-match definitivo, così non marchiamo l'utente per errore.
+            if ((string) ($response->json('code') ?? '') === 'rest_no_route') {
+                throw new WordPressUnavailableException('Endpoint account-by-email assente: aggiornare il plugin snapp-connector.');
+            }
+
+            return null;
+        }
+
+        if ($response->failed()) {
+            throw new WordPressUnavailableException('account-by-email ha risposto ' . $response->status());
+        }
+
+        return $response->json();
+    }
+
+    /**
      * Elenco dei ruoli registrati sul sito WordPress (firmato HMAC).
      * @return array<int,array{key:string,name:string,users:int}>
      */
