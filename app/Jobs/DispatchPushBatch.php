@@ -40,12 +40,14 @@ class DispatchPushBatch implements ShouldQueue
         // Azzera i contatori aggregati.
         Cache::forever("push:{$id}:success", 0);
         Cache::forever("push:{$id}:failure", 0);
-        Cache::forever("push:{$id}:invalid", 0);
 
-        // Costruisce un job per ogni chunk di token (≤500).
+        // Un job per ogni chunk di external id (≤ ALIAS_CHUNK); per il target
+        // "tutti" un solo job per segmento (chunk = null).
         $jobs = [];
-        $service->eachTokenChunk($notification, function (array $tokens) use (&$jobs, $id) {
-            $jobs[] = new SendPushChunk($id, $tokens);
+        $service->eachExternalIdChunk($notification, function (?array $externalIds) use (&$jobs, $id, $notification) {
+            $jobs[] = $externalIds === null
+                ? new SendPushChunk($id, segment: (string) config('snapp.onesignal.all_segment', 'Subscribed Users'))
+                : new SendPushChunk($id, externalIds: $externalIds);
         });
 
         if ($jobs === []) {
@@ -70,7 +72,7 @@ class DispatchPushBatch implements ShouldQueue
                         'stats' => [
                             'success' => (int) Cache::get("push:{$id}:success", 0),
                             'failure' => (int) Cache::get("push:{$id}:failure", 0),
-                            'invalid' => (int) Cache::get("push:{$id}:invalid", 0),
+                            'invalid' => 0,
                         ],
                     ])->save();
                 }

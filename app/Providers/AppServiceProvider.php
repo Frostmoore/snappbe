@@ -16,17 +16,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Transport push: FcmTransport se le credenziali Firebase ci sono,
-        // altrimenti LogPushTransport (così il flusso funziona già in dev).
-        $this->app->bind(\App\Notifications\Push\Contracts\PushTransport::class, function ($app) {
-            $path = (string) config('snapp.fcm.credentials_path');
-            $configured = $path !== '' && (file_exists($path) || file_exists(base_path($path)));
-
-            return $configured
-                ? $app->make(\App\Notifications\Push\Transports\FcmTransport::class)
-                : $app->make(\App\Notifications\Push\Transports\LogPushTransport::class);
+        // Transport push (provider attuale): OneSignal se le credenziali ci sono,
+        // altrimenti log (il flusso resta esercitabile in dev / senza chiavi).
+        $this->app->bind(\App\Notifications\Push\Contracts\AudiencePushTransport::class, function ($app) {
+            return $app->make(\App\Services\Push\OneSignalClient::class)->isConfigured()
+                ? $app->make(\App\Notifications\Push\Transports\OneSignalTransport::class)
+                : $app->make(\App\Notifications\Push\Transports\LogAudiencePushTransport::class);
         });
 
+        // LEGACY: vecchio transport FCM (token-based). Non usato dal flusso attuale,
+        // mantenuto per i file storici; risolto solo se richiesto esplicitamente.
         $this->app->bind(\App\Notifications\Push\Transports\FcmTransport::class, function ($app) {
             return new \App\Notifications\Push\Transports\FcmTransport($app->make('firebase.messaging'));
         });

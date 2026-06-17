@@ -51,8 +51,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Firebase Cloud Messaging (push)
+    | Notifiche push — OneSignal (provider attuale)
     |--------------------------------------------------------------------------
+    | Targeting per external user id (= id utente app) e per segmento. Le
+    | credenziali si compilano nel .env quando disponibili; se mancano, il
+    | transport ricade su log (nessun invio, nessun crash).
+    */
+    'onesignal' => [
+        'app_id'       => env('ONESIGNAL_APP_ID', ''),
+        'rest_api_key' => env('ONESIGNAL_REST_API_KEY', ''),
+        'api_url'      => env('ONESIGNAL_API_URL', 'https://onesignal.com/api/v1/notifications'),
+        // Segmento OneSignal usato per il target "tutti".
+        'all_segment'  => env('ONESIGNAL_ALL_SEGMENT', 'Subscribed Users'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Firebase Cloud Messaging (push) — LEGACY (sostituito da OneSignal)
+    |--------------------------------------------------------------------------
+    | Config storica del vecchio transport FCM, mantenuta per i file legacy
+    | (FcmTransport/Device). Non usata dal flusso push attuale.
     */
     'fcm' => [
         'project_id'       => env('FCM_PROJECT_ID', ''),
