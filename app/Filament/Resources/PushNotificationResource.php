@@ -55,10 +55,7 @@ class PushNotificationResource extends Resource
                         ->label('Link al tap (facoltativo)')
                         ->placeholder('/articles/123  oppure  https://...')
                         ->helperText('Schermata in-app (es: /articles/{id} · /newsletters · /partners · /events/{id} · /magazine) oppure un link esterno https:// (apre il browser).')
-                        ->maxLength(1024),
-                    Forms\Components\KeyValue::make('data')
-                        ->label('Dati extra (facoltativi)')
-                        ->keyLabel('Chiave')->valueLabel('Valore')
+                        ->maxLength(1024)
                         ->columnSpanFull(),
                 ])->columns(2),
 

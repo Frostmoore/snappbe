@@ -84,6 +84,12 @@ class UserResource extends Resource
                     ->label('Livello')
                     ->badge()
                     ->placeholder('—'),
+                Tables\Columns\TextColumn::make('wp_role_label')
+                    ->label('Ruolo WP')
+                    ->badge()
+                    ->color('info')
+                    ->placeholder('—')
+                    ->tooltip(fn ($record) => $record->wp_role ? 'slug: '.$record->wp_role : null),
                 Tables\Columns\IconColumn::make('email_verified_at')
                     ->label('Verificato')
                     ->boolean(),
