@@ -66,6 +66,19 @@ class PushNotificationService
         return $this->sendToExternalIds($this->userIdsForLevel($levelKey)->pluck('id')->all(), $message);
     }
 
+    /** Invio agli utenti con un dato ruolo WordPress (slug esatto). */
+    public function sendToRole(?string $roleSlug, PushMessage $message): PushResult
+    {
+        if ($roleSlug === null || $roleSlug === '') {
+            return new PushResult();
+        }
+
+        return $this->sendToExternalIds(
+            User::query()->where('wp_role', $roleSlug)->pluck('id')->all(),
+            $message,
+        );
+    }
+
     /** Invio a tutti gli iscritti (segmento OneSignal). */
     public function sendToAll(PushMessage $message): PushResult
     {
@@ -86,6 +99,7 @@ class PushNotificationService
         $result = match ($notification->target) {
             PushTarget::All   => $this->sendToAll($message),
             PushTarget::Level => $this->sendToLevel($notification->target_level, $message),
+            PushTarget::Role  => $this->sendToRole($notification->target_role, $message),
             PushTarget::Users => $this->sendToUsers($notification->target_user_ids ?? [], $message),
         };
 
@@ -125,6 +139,7 @@ class PushNotificationService
     {
         return match ($notification->target) {
             PushTarget::Level => $this->userIdsForLevel($notification->target_level),
+            PushTarget::Role  => User::query()->where('wp_role', $notification->target_role),
             PushTarget::Users => User::query()->whereIn('id', $notification->target_user_ids ?? []),
             PushTarget::All   => User::query()->whereRaw('1 = 0'), // non usato (vedi eachExternalIdChunk)
         };

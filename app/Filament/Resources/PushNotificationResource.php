@@ -76,6 +76,17 @@ class PushNotificationResource extends Resource
                         ->helperText('Raggiunge questo livello e superiori.')
                         ->visible(fn (Get $get) => $get('target') === PushTarget::Level->value)
                         ->required(fn (Get $get) => $get('target') === PushTarget::Level->value),
+                    Forms\Components\Select::make('target_role')
+                        ->label('Ruolo WordPress')
+                        ->options(fn () => User::query()
+                            ->whereNotNull('wp_role')
+                            ->orderBy('wp_role_label')
+                            ->distinct()
+                            ->pluck('wp_role_label', 'wp_role'))
+                        ->searchable()
+                        ->helperText('Invia agli utenti con questo ruolo del sito.')
+                        ->visible(fn (Get $get) => $get('target') === PushTarget::Role->value)
+                        ->required(fn (Get $get) => $get('target') === PushTarget::Role->value),
                     Forms\Components\Select::make('target_user_ids')
                         ->label('Utenti')
                         ->multiple()->searchable()

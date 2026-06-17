@@ -79,6 +79,19 @@ class PushServiceTest extends TestCase
         );
     }
 
+    public function test_send_to_role_targets_users_with_that_wp_role(): void
+    {
+        $fake = $this->fakeTransport();
+        $a = User::factory()->create(['wp_role' => 'agente']);
+        $b = User::factory()->create(['wp_role' => 'agente']);
+        User::factory()->create(['wp_role' => 'collaboratore']);
+        User::factory()->create(['wp_role' => null]);
+
+        $this->service()->sendToRole('agente', PushMessage::make('T', 'B'));
+
+        $this->assertEqualsCanonicalizing([(string) $a->id, (string) $b->id], $fake->sentExternalIds);
+    }
+
     public function test_send_to_users_targets_given_ids(): void
     {
         $fake = $this->fakeTransport();

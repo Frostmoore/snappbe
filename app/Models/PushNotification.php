@@ -21,6 +21,7 @@ class PushNotification extends Model
         'data',
         'target',
         'target_level',
+        'target_role',
         'target_user_ids',
         'status',
         'sent_at',

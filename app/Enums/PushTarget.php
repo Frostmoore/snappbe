@@ -7,6 +7,7 @@ enum PushTarget: string
 {
     case All = 'all';        // tutti i device
     case Level = 'level';    // utenti con livello >= target_level
+    case Role = 'role';      // utenti con un ruolo WordPress (target_role)
     case Users = 'users';    // utenti specifici
 
     public function label(): string
@@ -14,6 +15,7 @@ enum PushTarget: string
         return match ($this) {
             self::All => 'Tutti',
             self::Level => 'Per livello',
+            self::Role => 'Per ruolo WP',
             self::Users => 'Utenti specifici',
         };
     }
