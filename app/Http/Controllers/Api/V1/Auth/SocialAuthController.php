@@ -8,15 +8,20 @@ use App\Http\Requests\Auth\SocialLoginRequest;
 use App\Http\Resources\UserResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\User;
+use App\Services\Auth\SocialTokenVerifier;
 use Illuminate\Http\JsonResponse;
-use Laravel\Socialite\Facades\Socialite;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class SocialAuthController extends Controller
 {
+    public function __construct(private readonly SocialTokenVerifier $verifier)
+    {
+    }
+
     /**
-     * Provider supportati. NB: 'apple' richiede il pacchetto socialiteproviders/apple
-     * (da aggiungere quando configureremo Apple); 'google' è coperto da Socialite core.
+     * Provider supportati. 'google' è attivo; 'apple' verrà completato in fase 2
+     * (verifica JWT Apple). Finché APPLE_CLIENT_ID non è configurato, il provider
+     * apple ricade nel ramo "non configurato".
      */
     private const SUPPORTED = ['google', 'apple'];
 
@@ -83,19 +88,16 @@ class SocialAuthController extends Controller
      */
     private function resolveIdentity(SocialLoginRequest $request, string $provider): array|null|false
     {
-        // 1) Reale: solo se il provider ha le credenziali configurate.
+        // 1) Reale: solo se il provider ha le credenziali configurate. La verifica
+        //    è esplicita (audience/issuer), non un semplice decode del token.
         if (config("snapp.oauth.{$provider}.client_id")) {
-            try {
-                $u = Socialite::driver($provider)->stateless()->userFromToken($request->string('token'));
-            } catch (\Throwable $e) {
-                return null;
-            }
+            $token = (string) $request->string('token');
 
-            return [
-                'id'    => (string) $u->getId(),
-                'email' => $u->getEmail(),
-                'name'  => $u->getName() ?: $u->getNickname(),
-            ];
+            return match ($provider) {
+                'google' => $this->verifier->google($token),
+                'apple'  => $this->verifier->apple($token),
+                default  => null,
+            };
         }
 
         // 2) Mock: SOLO fuori produzione e con flag esplicito. In prod è irraggiungibile.
