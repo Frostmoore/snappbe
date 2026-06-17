@@ -54,18 +54,25 @@ class SocialAuthController extends Controller
             $user = User::where('email', $identity['email'])->first();
         }
 
+        // Nome: dal token (Google), altrimenti quello inviato dall'app (Apple,
+        // solo al primo consenso). Dato client non verificato.
+        $incomingName = $identity['name'] ?: trim((string) $request->string('name'));
+
         if ($user) {
-            $user->forceFill([
+            $attrs = [
                 'provider' => $provider,
                 'provider_id' => $identity['id'],
                 'email_verified_at' => $user->email_verified_at ?? now(),
-            ])->save();
+            ];
+            // Auto-correzione: se il nome è vuoto o il placeholder e ora ne abbiamo
+            // uno vero, lo impostiamo (non sovrascriviamo mai un nome reale).
+            if ($incomingName !== '' && in_array(trim((string) $user->name), ['', 'Utente SNA'], true)) {
+                $attrs['name'] = $incomingName;
+            }
+            $user->forceFill($attrs)->save();
         } else {
-            // Nome: dal token (Google), altrimenti quello inviato dall'app
-            // (Apple, primo consenso), altrimenti fallback generico.
-            $name = $identity['name'] ?: trim((string) $request->string('name')) ?: 'Utente SNA';
             $user = User::create([
-                'name' => $name,
+                'name' => $incomingName ?: 'Utente SNA',
                 'email' => $identity['email'] ?: "{$provider}_{$identity['id']}@social.local",
                 'role' => UserRole::Member->value,
                 'provider' => $provider,

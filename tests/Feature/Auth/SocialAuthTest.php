@@ -79,6 +79,26 @@ class SocialAuthTest extends TestCase
         $this->assertDatabaseHas('users', ['provider_id' => 'apple-name-1', 'name' => 'Giulia Verdi']);
     }
 
+    public function test_apple_login_backfills_placeholder_name(): void
+    {
+        $user = User::factory()->create(['name' => 'Utente SNA', 'provider' => 'apple', 'provider_id' => 'apple-bf-1']);
+        $this->fakeVerifier('apple', ['id' => 'apple-bf-1', 'email' => $user->email, 'name' => null]);
+
+        $this->postJson('/api/v1/auth/social/apple', ['token' => 'jwt', 'name' => 'Marco Bianchi'])->assertOk();
+
+        $this->assertEquals('Marco Bianchi', $user->fresh()->name);
+    }
+
+    public function test_apple_login_does_not_overwrite_real_name(): void
+    {
+        $user = User::factory()->create(['name' => 'Nome Vero', 'provider' => 'apple', 'provider_id' => 'apple-rn-1']);
+        $this->fakeVerifier('apple', ['id' => 'apple-rn-1', 'email' => $user->email, 'name' => null]);
+
+        $this->postJson('/api/v1/auth/social/apple', ['token' => 'jwt', 'name' => 'Altro Nome'])->assertOk();
+
+        $this->assertEquals('Nome Vero', $user->fresh()->name);
+    }
+
     public function test_unsupported_provider_returns_404(): void
     {
         $this->postJson('/api/v1/auth/social/facebook', ['token' => 'x'])->assertStatus(404);
