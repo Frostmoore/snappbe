@@ -69,6 +69,16 @@ class SocialAuthTest extends TestCase
         ]);
     }
 
+    public function test_apple_login_uses_name_from_request_when_token_has_none(): void
+    {
+        // Apple non mette il nome nel token: l'app lo invia a parte (primo consenso).
+        $this->fakeVerifier('apple', ['id' => 'apple-name-1', 'email' => 'n@example.com', 'name' => null]);
+
+        $this->postJson('/api/v1/auth/social/apple', ['token' => 'jwt', 'name' => 'Giulia Verdi'])->assertOk();
+
+        $this->assertDatabaseHas('users', ['provider_id' => 'apple-name-1', 'name' => 'Giulia Verdi']);
+    }
+
     public function test_unsupported_provider_returns_404(): void
     {
         $this->postJson('/api/v1/auth/social/facebook', ['token' => 'x'])->assertStatus(404);

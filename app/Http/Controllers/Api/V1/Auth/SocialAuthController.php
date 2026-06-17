@@ -61,8 +61,11 @@ class SocialAuthController extends Controller
                 'email_verified_at' => $user->email_verified_at ?? now(),
             ])->save();
         } else {
+            // Nome: dal token (Google), altrimenti quello inviato dall'app
+            // (Apple, primo consenso), altrimenti fallback generico.
+            $name = $identity['name'] ?: trim((string) $request->string('name')) ?: 'Utente SNA';
             $user = User::create([
-                'name' => $identity['name'] ?: 'Utente SNA',
+                'name' => $name,
                 'email' => $identity['email'] ?: "{$provider}_{$identity['id']}@social.local",
                 'role' => UserRole::Member->value,
                 'provider' => $provider,
