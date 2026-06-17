@@ -65,6 +65,11 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('id')
+                    ->label('External ID')
+                    ->copyable()
+                    ->sortable()
+                    ->tooltip('Identificativo usato per il targeting push (OneSignal external_id).'),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nome')
                     ->searchable(),

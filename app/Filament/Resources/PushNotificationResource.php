@@ -52,9 +52,9 @@ class PushNotificationResource extends Resource
                         ->url()->maxLength(1024)
                         ->helperText('Usato solo se non carichi un\'immagine.'),
                     Forms\Components\TextInput::make('deep_link')
-                        ->label('Deep-link (destinazione in app)')
-                        ->placeholder('snapp://article/123')
-                        ->helperText('Es: snapp://feed · snapp://post/{id} · snapp://article/{id} · snapp://event/{id} · snapp://tools')
+                        ->label('Link al tap (facoltativo)')
+                        ->placeholder('/articles/123  oppure  https://...')
+                        ->helperText('Schermata in-app (es: /articles/{id} · /newsletters · /partners · /events/{id} · /magazine) oppure un link esterno https:// (apre il browser).')
                         ->maxLength(1024),
                     Forms\Components\KeyValue::make('data')
                         ->label('Dati extra (facoltativi)')
