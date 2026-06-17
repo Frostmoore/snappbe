@@ -55,7 +55,8 @@ class OneSignalClient
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Basic '.$this->restApiKey(),
+                // Formato chiave OneSignal moderno (os_v2_app_...): header "Key".
+                'Authorization' => 'Key '.$this->restApiKey(),
                 'Content-Type'  => 'application/json; charset=utf-8',
             ])->timeout(15)->post($this->apiUrl(), $payload);
         } catch (\Throwable $e) {

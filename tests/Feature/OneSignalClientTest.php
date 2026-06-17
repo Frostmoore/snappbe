@@ -38,7 +38,7 @@ class OneSignalClientTest extends TestCase
                 && $request['target_channel'] === 'push'
                 && $request['data']['deep_link'] === 'snapp://article/9'
                 && $request['big_picture'] === 'https://x/y.jpg'
-                && $request->hasHeader('Authorization', 'Basic key-abc');
+                && $request->hasHeader('Authorization', 'Key key-abc');
         });
     }
 
