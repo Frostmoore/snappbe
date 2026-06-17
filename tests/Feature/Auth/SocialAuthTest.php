@@ -3,10 +3,8 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use App\Services\Auth\SocialTokenVerifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Socialite\Contracts\Provider;
-use Laravel\Socialite\Contracts\User as SocialiteUser;
-use Laravel\Socialite\Facades\Socialite;
 use Mockery;
 use Tests\TestCase;
 
@@ -14,27 +12,24 @@ class SocialAuthTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function mockSocialite(string $id, ?string $email, string $name = 'Mario Rossi'): void
+    /**
+     * Sostituisce il verificatore token con un mock: il provider è "configurato"
+     * e restituisce l'identità indicata ($identity = null → token non valido).
+     *
+     * @param  array{id:string,email:?string,name:?string}|null  $identity
+     */
+    private function fakeVerifier(string $provider, ?array $identity): void
     {
-        // Percorso reale: attivo solo con credenziali configurate.
-        config(['snapp.oauth.google.client_id' => 'test-client-id']);
+        config(["snapp.oauth.{$provider}.client_id" => 'test-client-id']);
 
-        $socialUser = Mockery::mock(SocialiteUser::class);
-        $socialUser->shouldReceive('getId')->andReturn($id);
-        $socialUser->shouldReceive('getEmail')->andReturn($email);
-        $socialUser->shouldReceive('getName')->andReturn($name);
-        $socialUser->shouldReceive('getNickname')->andReturn(null);
-
-        $provider = Mockery::mock(Provider::class);
-        $provider->shouldReceive('stateless')->andReturnSelf();
-        $provider->shouldReceive('userFromToken')->andReturn($socialUser);
-
-        Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+        $mock = Mockery::mock(SocialTokenVerifier::class);
+        $mock->shouldReceive($provider)->andReturn($identity);
+        $this->app->instance(SocialTokenVerifier::class, $mock);
     }
 
     public function test_social_login_creates_new_user_and_returns_token(): void
     {
-        $this->mockSocialite('google-123', 'social@example.com');
+        $this->fakeVerifier('google', ['id' => 'google-123', 'email' => 'social@example.com', 'name' => 'Mario Rossi']);
 
         $this->postJson('/api/v1/auth/social/google', ['token' => 'fake-id-token'])
             ->assertOk()
@@ -52,12 +47,26 @@ class SocialAuthTest extends TestCase
     public function test_social_login_links_existing_email_account(): void
     {
         $existing = User::factory()->create(['email' => 'social@example.com', 'provider' => null]);
-        $this->mockSocialite('google-123', 'social@example.com');
+        $this->fakeVerifier('google', ['id' => 'google-123', 'email' => 'social@example.com', 'name' => 'Mario Rossi']);
 
         $this->postJson('/api/v1/auth/social/google', ['token' => 'fake-id-token'])->assertOk();
 
         $this->assertEquals('google', $existing->fresh()->provider);
         $this->assertSame(1, User::whereEmail('social@example.com')->count());
+    }
+
+    public function test_apple_login_creates_user(): void
+    {
+        $this->fakeVerifier('apple', ['id' => 'apple-999', 'email' => 'mela@example.com', 'name' => null]);
+
+        $this->postJson('/api/v1/auth/social/apple', ['token' => 'fake-apple-jwt'])
+            ->assertOk()
+            ->assertJsonPath('data.user.email', 'mela@example.com');
+
+        $this->assertDatabaseHas('users', [
+            'provider' => 'apple',
+            'provider_id' => 'apple-999',
+        ]);
     }
 
     public function test_unsupported_provider_returns_404(): void
@@ -67,13 +76,16 @@ class SocialAuthTest extends TestCase
 
     public function test_invalid_token_returns_401(): void
     {
-        config(['snapp.oauth.google.client_id' => 'test-client-id']);
-        $provider = Mockery::mock(Provider::class);
-        $provider->shouldReceive('stateless')->andReturnSelf();
-        $provider->shouldReceive('userFromToken')->andThrow(new \RuntimeException('invalid'));
-        Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+        $this->fakeVerifier('google', null);
 
         $this->postJson('/api/v1/auth/social/google', ['token' => 'bad'])->assertStatus(401);
+    }
+
+    public function test_invalid_apple_token_returns_401(): void
+    {
+        $this->fakeVerifier('apple', null);
+
+        $this->postJson('/api/v1/auth/social/apple', ['token' => 'bad'])->assertStatus(401);
     }
 
     public function test_mock_social_login_creates_user_when_enabled(): void

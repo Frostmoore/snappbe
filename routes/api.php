@@ -60,6 +60,10 @@ Route::prefix('v1')->group(function () {
     Route::post('auth/register', [RegisterController::class, 'store']);
     Route::post('auth/login', [LoginController::class, 'store'])->middleware('throttle:6,1');
     Route::post('auth/social/{provider}', [SocialAuthController::class, 'store'])->middleware('throttle:10,1');
+    // Callback del flusso WEB di Sign in with Apple (Android): riceve il POST
+    // di Apple e rimbalza i dati nell'app via deep-link signinwithapple://.
+    Route::match(['get', 'post'], 'auth/apple/callback', \App\Http\Controllers\Api\V1\Auth\AppleCallbackController::class)
+        ->middleware('throttle:20,1');
     // "Accedi con SNA": credenziali snaservice.it → crea utente app + link WP.
     Route::post('auth/sna', [\App\Http\Controllers\Api\V1\Auth\SnaLoginController::class, 'store'])->middleware('throttle:6,1');
 

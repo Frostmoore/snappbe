@@ -2,6 +2,9 @@
 
 namespace App\Services\Auth;
 
+use Firebase\JWT\JWK;
+use Firebase\JWT\JWT;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -73,15 +76,116 @@ class SocialTokenVerifier
     }
 
     /**
-     * Verifica l'identity token Apple.
+     * Verifica l'identity token Apple (JWT) contro le chiavi pubbliche Apple.
      *
-     * TODO (fase 2): implementare la verifica del JWT Apple contro le chiavi
-     * pubbliche (https://appleid.apple.com/auth/keys), controllando iss
-     * (https://appleid.apple.com) e aud ∈ { bundle id iOS, Services ID Android }.
-     * Richiede le credenziali dell'Apple Developer Program.
+     * Controlla firma (RS256, chiavi da appleid.apple.com/auth/keys), issuer
+     * (https://appleid.apple.com) e audience ∈ { bundle id iOS, Services ID
+     * Android }. Non serve la chiave privata `.p8` (solo verifica, non scambio
+     * del codice).
+     *
+     * @return array{id:string,email:?string,name:?string}|null  null = token non valido
      */
     public function apple(string $identityToken): ?array
     {
-        return null;
+        $token = trim($identityToken);
+        if ($token === '') {
+            return null;
+        }
+
+        $allowedAud = array_values(array_filter([
+            (string) config('snapp.oauth.apple.client_id'),   // bundle id (iOS)
+            (string) config('snapp.oauth.apple.services_id'), // Services ID (Android/web)
+        ]));
+        if ($allowedAud === []) {
+            return null;
+        }
+
+        // Decodifica + verifica firma. Se la kid non è tra le chiavi in cache
+        // (rotazione), ricarica una volta le chiavi e riprova.
+        $claims = $this->decodeApple($token, false);
+        if ($claims === null) {
+            $claims = $this->decodeApple($token, true);
+        }
+        if ($claims === null) {
+            return null;
+        }
+
+        if (($claims['iss'] ?? '') !== 'https://appleid.apple.com') {
+            return null;
+        }
+        if (! in_array($claims['aud'] ?? '', $allowedAud, true)) {
+            return null;
+        }
+        if (isset($claims['exp']) && (int) $claims['exp'] < time()) {
+            return null;
+        }
+
+        $sub = (string) ($claims['sub'] ?? '');
+        if ($sub === '') {
+            return null;
+        }
+
+        // Apple invia l'email nel token (verificata); il NOME non è nel token,
+        // arriva separatamente solo al primissimo consenso → lo lasciamo nullo.
+        return [
+            'id'    => $sub,
+            'email' => isset($claims['email']) ? (string) $claims['email'] : null,
+            'name'  => null,
+        ];
+    }
+
+    /**
+     * Decodifica e verifica un token Apple con le chiavi pubbliche (in cache 1h).
+     *
+     * @param  bool  $forceRefresh  ricarica le chiavi ignorando la cache
+     * @return array<string,mixed>|null
+     */
+    private function decodeApple(string $token, bool $forceRefresh): ?array
+    {
+        $keys = $this->appleJwks($forceRefresh);
+        if ($keys === null) {
+            return null;
+        }
+
+        try {
+            $decoded = JWT::decode($token, JWK::parseKeySet($keys));
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        return (array) $decoded;
+    }
+
+    /**
+     * Set di chiavi pubbliche Apple (JWKS), cache 1h. Non cache-a i fallimenti.
+     *
+     * @return array<string,mixed>|null
+     */
+    private function appleJwks(bool $forceRefresh): ?array
+    {
+        if (! $forceRefresh) {
+            $cached = Cache::get('apple_jwks');
+            if (is_array($cached)) {
+                return $cached;
+            }
+        }
+
+        try {
+            $resp = Http::timeout(8)->get('https://appleid.apple.com/auth/keys');
+        } catch (\Throwable $e) {
+            return null;
+        }
+        if (! $resp->ok()) {
+            return null;
+        }
+
+        $keys = $resp->json();
+        if (! is_array($keys) || ! isset($keys['keys'])) {
+            return null;
+        }
+
+        Cache::put('apple_jwks', $keys, 3600);
+
+        return $keys;
     }
 }

@@ -35,7 +35,13 @@ return [
             'client_secret' => env('GOOGLE_CLIENT_SECRET', ''),
         ],
         'apple' => [
+            // Bundle ID dell'app iOS = audience del token nel login NATIVO iOS.
+            // Funge anche da "interruttore configurato" del provider apple.
             'client_id'     => env('APPLE_CLIENT_ID', ''),
+            // Services ID = audience del token nel flusso WEB (Android).
+            'services_id'   => env('APPLE_SERVICES_ID', ''),
+            'team_id'       => env('APPLE_TEAM_ID', ''),
+            'key_id'        => env('APPLE_KEY_ID', ''),
             'client_secret' => env('APPLE_CLIENT_SECRET', ''),
         ],
         // SOLO DEV: consente il login social mock (senza credenziali reali) per
