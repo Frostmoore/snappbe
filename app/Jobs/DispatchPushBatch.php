@@ -46,7 +46,7 @@ class DispatchPushBatch implements ShouldQueue
         $jobs = [];
         $service->eachExternalIdChunk($notification, function (?array $externalIds) use (&$jobs, $id, $notification) {
             $jobs[] = $externalIds === null
-                ? new SendPushChunk($id, segment: (string) config('snapp.onesignal.all_segment', 'Subscribed Users'))
+                ? new SendPushChunk($id, segment: (string) config('snapp.onesignal.all_segment', 'Total Subscriptions'))
                 : new SendPushChunk($id, externalIds: $externalIds);
         });
 

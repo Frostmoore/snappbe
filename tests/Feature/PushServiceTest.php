@@ -57,7 +57,7 @@ class PushServiceTest extends TestCase
 
         $result = $this->service()->sendToAll(PushMessage::make('T', 'B'));
 
-        $this->assertSame(['Subscribed Users'], $fake->segments);
+        $this->assertSame(['Total Subscriptions'], $fake->segments);
         $this->assertSame(1, $result->success);
     }
 

@@ -54,7 +54,7 @@ class PushBatchTest extends TestCase
         $fresh = $notification->fresh();
         $this->assertSame('sent', $fresh->status);
         $this->assertSame(1, $fresh->stats['success']);
-        $this->assertContains('Subscribed Users', $fake->segments);
+        $this->assertContains('Total Subscriptions', $fake->segments);
     }
 
     public function test_queue_users_dispatches_external_id_chunks(): void

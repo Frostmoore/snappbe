@@ -61,8 +61,10 @@ return [
         'app_id'       => env('ONESIGNAL_APP_ID', ''),
         'rest_api_key' => env('ONESIGNAL_REST_API_KEY', ''),
         'api_url'      => env('ONESIGNAL_API_URL', 'https://onesignal.com/api/v1/notifications'),
-        // Segmento OneSignal usato per il target "tutti".
-        'all_segment'  => env('ONESIGNAL_ALL_SEGMENT', 'Subscribed Users'),
+        // Segmento OneSignal usato per il target "tutti". Nel modello nuovo di
+        // OneSignal il segmento di default che include tutte le iscrizioni è
+        // "Total Subscriptions" ("Subscribed Users" risulta vuoto).
+        'all_segment'  => env('ONESIGNAL_ALL_SEGMENT', 'Total Subscriptions'),
     ],
 
     /*

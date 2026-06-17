@@ -70,7 +70,7 @@ class PushNotificationService
     public function sendToAll(PushMessage $message): PushResult
     {
         return $this->transport->sendToSegment(
-            (string) config('snapp.onesignal.all_segment', 'Subscribed Users'),
+            (string) config('snapp.onesignal.all_segment', 'Total Subscriptions'),
             $message,
         );
     }

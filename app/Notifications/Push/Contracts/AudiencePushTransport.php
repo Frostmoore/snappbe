@@ -22,6 +22,6 @@ interface AudiencePushTransport
      */
     public function sendToExternalIds(array $externalIds, PushMessage $message): PushResult;
 
-    /** Invia a un segmento OneSignal (es. "Subscribed Users" per "tutti"). */
+    /** Invia a un segmento OneSignal (es. "Total Subscriptions" per "tutti"). */
     public function sendToSegment(string $segment, PushMessage $message): PushResult;
 }
