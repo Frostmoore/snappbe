@@ -40,6 +40,12 @@ class AppServiceProvider extends ServiceProvider
         // uniforme { "data": ... } lo gestisce ApiResponse, evitando il doppio "data".
         JsonResource::withoutWrapping();
 
+        // Mailer "onesignal": spedisce le email via l'API email di OneSignal.
+        // Si attiva con MAIL_MAILER=onesignal (richiede dominio mittente verificato).
+        \Illuminate\Support\Facades\Mail::extend('onesignal', function () {
+            return new \App\Mail\Transport\OneSignalMailTransport();
+        });
+
         // Requisiti password FORTI, validi ovunque si usi Password::defaults()
         // (registrazione, reset, cambio password): min 10, maiuscole+minuscole,
         // almeno un numero e un simbolo. In produzione anche il controllo contro

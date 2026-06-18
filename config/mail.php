@@ -79,6 +79,11 @@ return [
             'transport' => 'array',
         ],
 
+        // Invio email via OneSignal (vedi App\Mail\Transport\OneSignalMailTransport).
+        'onesignal' => [
+            'transport' => 'onesignal',
+        ],
+
         'failover' => [
             'transport' => 'failover',
             'mailers' => [
