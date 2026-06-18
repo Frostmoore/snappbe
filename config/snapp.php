@@ -19,7 +19,10 @@ return [
         // la chiave pubblica). Generala con `php artisan snapp:gen-signing-key`.
         'signing_secret_key' => env('SNAPP_SIGNING_SECRET_KEY', ''),
         'rest_path'   => '/wp-json/snapp/v1',
-        'timeout'     => 8,
+        // Timeout verso WP: a "freddo" il proxy WP può metterci diversi secondi
+        // (PHP-FPM/opcache + WP non in cache). Margine ampio per non dare 503 al
+        // primo accesso; le richieste successive sono in cache (ArticleCache).
+        'timeout'     => (int) env('SNAPP_WP_TIMEOUT', 20),
         // Slug della pagina WP "il mio account" mostrata nativamente nell'area riservata.
         'account_page_slug' => env('SNAPP_WP_ACCOUNT_PAGE', 'mio-account'),
     ],
