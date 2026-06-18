@@ -153,6 +153,29 @@ class WordPressClient
     }
 
     /**
+     * Imposta una nuova password per l'account WP indicato (solo firma). Va
+     * chiamato SOLO dopo aver verificato il possesso dell'email (codice di reset).
+     * True se impostata; false se l'account non esiste (404).
+     */
+    public function setPassword(int $wpUserId, string $newPassword): bool
+    {
+        $response = $this->signedPost('/set-password', [
+            'wp_user_id'   => $wpUserId,
+            'new_password' => $newPassword,
+        ]);
+
+        if ($response->status() === 404) {
+            return false;
+        }
+
+        if ($response->failed()) {
+            throw new WordPressUnavailableException('set-password ha risposto ' . $response->status());
+        }
+
+        return (bool) ($response->json('ok') ?? false);
+    }
+
+    /**
      * Elenco dei ruoli registrati sul sito WordPress (firmato HMAC).
      * @return array<int,array{key:string,name:string,users:int}>
      */
