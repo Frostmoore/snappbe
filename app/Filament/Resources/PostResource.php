@@ -4,11 +4,14 @@ namespace App\Filament\Resources;
 
 use App\Enums\PostStatus;
 use App\Enums\PostType;
+use App\Enums\PushTarget;
 use App\Filament\Resources\PostResource\Pages;
 use App\Models\AccessLevel;
 use App\Models\Post;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -100,6 +103,45 @@ class PostResource extends Resource
                             ->relationship('author', 'name')
                             ->default(fn () => auth()->id())
                             ->searchable(),
+                    ])
+                    ->columns(2),
+
+                Forms\Components\Section::make('Notifica push')
+                    ->description('Se attivo, al salvataggio parte una notifica che apre questa comunicazione nell\'app.')
+                    ->icon('heroicon-o-bell-alert')
+                    ->schema([
+                        Forms\Components\Toggle::make('send_push')
+                            ->label('Invia notifica push')
+                            ->helperText('La notifica usa titolo + estratto del post e rimanda al post.')
+                            ->default(false)
+                            ->live()
+                            ->columnSpanFull(),
+                        Forms\Components\Select::make('push_target')
+                            ->label('Invia a')
+                            ->options(PushTarget::options())
+                            ->default(PushTarget::All->value)
+                            ->live()
+                            ->visible(fn (Get $get) => (bool) $get('send_push'))
+                            ->required(fn (Get $get) => (bool) $get('send_push')),
+                        Forms\Components\Select::make('push_target_level')
+                            ->label('Livello minimo')
+                            ->options(fn () => AccessLevel::query()->orderBy('weight')->pluck('label', 'key'))
+                            ->visible(fn (Get $get) => $get('send_push') && $get('push_target') === PushTarget::Level->value)
+                            ->required(fn (Get $get) => $get('send_push') && $get('push_target') === PushTarget::Level->value),
+                        Forms\Components\Select::make('push_target_role')
+                            ->label('Ruolo WordPress')
+                            ->options(fn () => User::query()->whereNotNull('wp_role')->orderBy('wp_role_label')->distinct()->pluck('wp_role_label', 'wp_role'))
+                            ->searchable()
+                            ->visible(fn (Get $get) => $get('send_push') && $get('push_target') === PushTarget::Role->value)
+                            ->required(fn (Get $get) => $get('send_push') && $get('push_target') === PushTarget::Role->value),
+                        Forms\Components\Select::make('push_target_user_ids')
+                            ->label('Utenti')
+                            ->multiple()
+                            ->searchable()
+                            ->options(fn () => User::query()->orderBy('name')->pluck('name', 'id'))
+                            ->visible(fn (Get $get) => $get('send_push') && $get('push_target') === PushTarget::Users->value)
+                            ->required(fn (Get $get) => $get('send_push') && $get('push_target') === PushTarget::Users->value)
+                            ->columnSpanFull(),
                     ])
                     ->columns(2),
             ]);
