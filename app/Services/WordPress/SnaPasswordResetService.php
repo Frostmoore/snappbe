@@ -43,6 +43,16 @@ class SnaPasswordResetService
     }
 
     /**
+     * Verifica SOLO che il codice sia valido e non scaduto, senza consumarlo
+     * (step OTP separato, prima della nuova password). Il codice resta valido
+     * per il successivo `reset()`.
+     */
+    public function verifyCode(string $email, string $code): bool
+    {
+        return $this->validRow(mb_strtolower(trim($email)), $code) !== null;
+    }
+
+    /**
      * Verifica il codice e imposta la nuova password sul sito SNA.
      *
      * @return bool true se reimpostata; false se codice non valido/scaduto.
@@ -51,18 +61,8 @@ class SnaPasswordResetService
     {
         $email = mb_strtolower(trim($email));
 
-        $row = DB::table('sna_password_resets')->where('email', $email)->first();
+        $row = $this->validRow($email, $code);
         if (! $row) {
-            return false;
-        }
-
-        if (Carbon::parse($row->created_at)->diffInMinutes(now()) > self::TTL_MINUTES) {
-            DB::table('sna_password_resets')->where('email', $email)->delete();
-
-            return false;
-        }
-
-        if (! Hash::check($code, $row->token)) {
             return false;
         }
 
@@ -71,5 +71,25 @@ class SnaPasswordResetService
         DB::table('sna_password_resets')->where('email', $email)->delete();
 
         return $ok;
+    }
+
+    /**
+     * Riga di reset valida (esiste, non scaduta, codice corretto) o null.
+     * Cancella la riga se scaduta. NON la consuma se valida.
+     */
+    private function validRow(string $email, string $code): ?object
+    {
+        $row = DB::table('sna_password_resets')->where('email', $email)->first();
+        if (! $row) {
+            return null;
+        }
+
+        if (Carbon::parse($row->created_at)->diffInMinutes(now()) > self::TTL_MINUTES) {
+            DB::table('sna_password_resets')->where('email', $email)->delete();
+
+            return null;
+        }
+
+        return Hash::check($code, $row->token) ? $row : null;
     }
 }

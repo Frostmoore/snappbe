@@ -33,6 +33,21 @@ class SnaPasswordResetController extends Controller
         ]);
     }
 
+    /** Verifica SOLO il codice (step OTP separato, prima della nuova password). */
+    public function verify(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+            'code'  => ['required', 'string'],
+        ]);
+
+        if (! $this->service->verifyCode($data['email'], $data['code'])) {
+            return ApiResponse::error('Codice non valido o scaduto.', status: 422);
+        }
+
+        return ApiResponse::ok(['message' => 'Codice verificato.']);
+    }
+
     /** Verifica il codice e imposta la nuova password sul sito SNA. */
     public function reset(Request $request): JsonResponse
     {

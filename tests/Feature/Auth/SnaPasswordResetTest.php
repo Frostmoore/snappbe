@@ -71,6 +71,27 @@ class SnaPasswordResetTest extends TestCase
         $this->assertDatabaseHas('sna_password_resets', ['email' => 'mario@sna.it']);
     }
 
+    public function test_verify_accepts_valid_code_without_consuming(): void
+    {
+        DB::table('sna_password_resets')->insert([
+            'email' => 'mario@sna.it', 'token' => Hash::make('123456'), 'wp_user_id' => 5, 'created_at' => now(),
+        ]);
+
+        $this->postJson('/api/v1/auth/sna/password/verify', ['email' => 'mario@sna.it', 'code' => '123456'])->assertOk();
+
+        // Verifica NON consuma il codice: la riga resta per il reset successivo.
+        $this->assertDatabaseHas('sna_password_resets', ['email' => 'mario@sna.it']);
+    }
+
+    public function test_verify_rejects_wrong_code(): void
+    {
+        DB::table('sna_password_resets')->insert([
+            'email' => 'mario@sna.it', 'token' => Hash::make('123456'), 'wp_user_id' => 5, 'created_at' => now(),
+        ]);
+
+        $this->postJson('/api/v1/auth/sna/password/verify', ['email' => 'mario@sna.it', 'code' => '000000'])->assertStatus(422);
+    }
+
     public function test_reset_rejects_expired_code(): void
     {
         DB::table('sna_password_resets')->insert([

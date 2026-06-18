@@ -68,6 +68,7 @@ Route::prefix('v1')->group(function () {
     Route::post('auth/sna', [\App\Http\Controllers\Api\V1\Auth\SnaLoginController::class, 'store'])->middleware('throttle:6,1');
     // Reset password del sito SNA via codice email, completato in-app.
     Route::post('auth/sna/password/forgot', [\App\Http\Controllers\Api\V1\Auth\SnaPasswordResetController::class, 'request'])->middleware('throttle:5,1');
+    Route::post('auth/sna/password/verify', [\App\Http\Controllers\Api\V1\Auth\SnaPasswordResetController::class, 'verify'])->middleware('throttle:12,1');
     Route::post('auth/sna/password/reset', [\App\Http\Controllers\Api\V1\Auth\SnaPasswordResetController::class, 'reset'])->middleware('throttle:6,1');
 
     Route::post('auth/password/forgot', [PasswordResetController::class, 'sendLink'])->middleware('throttle:6,1');
