@@ -76,11 +76,6 @@ class PostResource extends Resource
                             ->required(),
                         Forms\Components\DateTimePicker::make('published_at')
                             ->label('Data pubblicazione'),
-                        Forms\Components\Select::make('min_level')
-                            ->label('Livello minimo')
-                            ->options(fn () => AccessLevel::query()->orderBy('weight')->pluck('label', 'key'))
-                            ->placeholder('Pubblico (tutti)')
-                            ->helperText('Vuoto = visibile a tutti. Altrimenti richiede il livello indicato o superiore.'),
                         Forms\Components\FileUpload::make('cover_path')
                             ->label('Copertina (carica immagine)')
                             ->image()
@@ -106,44 +101,47 @@ class PostResource extends Resource
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Notifica push')
-                    ->description('Se attivo, al salvataggio parte una notifica che apre questa comunicazione nell\'app.')
-                    ->icon('heroicon-o-bell-alert')
+                Forms\Components\Section::make('Destinatari')
+                    ->description('Chi VEDE questa comunicazione in app (e, se invii la notifica, chi la riceve).')
+                    ->icon('heroicon-o-user-group')
                     ->schema([
-                        Forms\Components\Toggle::make('send_push')
-                            ->label('Invia notifica push')
-                            ->helperText('La notifica usa titolo + estratto del post e rimanda al post.')
-                            ->default(false)
-                            ->live()
-                            ->columnSpanFull(),
-                        Forms\Components\Select::make('push_target')
-                            ->label('Invia a')
+                        Forms\Components\Select::make('audience')
+                            ->label('Visibile a')
                             ->options(PushTarget::options())
                             ->default(PushTarget::All->value)
-                            ->live()
-                            ->visible(fn (Get $get) => (bool) $get('send_push'))
-                            ->required(fn (Get $get) => (bool) $get('send_push')),
-                        Forms\Components\Select::make('push_target_level')
+                            ->required()
+                            ->live(),
+                        Forms\Components\Select::make('min_level')
                             ->label('Livello minimo')
                             ->options(fn () => AccessLevel::query()->orderBy('weight')->pluck('label', 'key'))
-                            ->visible(fn (Get $get) => $get('send_push') && $get('push_target') === PushTarget::Level->value)
-                            ->required(fn (Get $get) => $get('send_push') && $get('push_target') === PushTarget::Level->value),
-                        Forms\Components\Select::make('push_target_role')
+                            ->helperText('Questo livello e superiori.')
+                            ->visible(fn (Get $get) => $get('audience') === PushTarget::Level->value)
+                            ->required(fn (Get $get) => $get('audience') === PushTarget::Level->value),
+                        Forms\Components\Select::make('audience_role')
                             ->label('Ruolo WordPress')
                             ->options(fn () => User::query()->whereNotNull('wp_role')->orderBy('wp_role_label')->distinct()->pluck('wp_role_label', 'wp_role'))
                             ->searchable()
-                            ->visible(fn (Get $get) => $get('send_push') && $get('push_target') === PushTarget::Role->value)
-                            ->required(fn (Get $get) => $get('send_push') && $get('push_target') === PushTarget::Role->value),
-                        Forms\Components\Select::make('push_target_user_ids')
+                            ->visible(fn (Get $get) => $get('audience') === PushTarget::Role->value)
+                            ->required(fn (Get $get) => $get('audience') === PushTarget::Role->value),
+                        Forms\Components\Select::make('audience_user_ids')
                             ->label('Utenti')
                             ->multiple()
                             ->searchable()
                             ->options(fn () => User::query()->orderBy('name')->pluck('name', 'id'))
-                            ->visible(fn (Get $get) => $get('send_push') && $get('push_target') === PushTarget::Users->value)
-                            ->required(fn (Get $get) => $get('send_push') && $get('push_target') === PushTarget::Users->value)
+                            ->visible(fn (Get $get) => $get('audience') === PushTarget::Users->value)
+                            ->required(fn (Get $get) => $get('audience') === PushTarget::Users->value)
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
+
+                Forms\Components\Section::make('Notifica push')
+                    ->description('Se attivo, al salvataggio parte una notifica ai DESTINATARI qui sopra (titolo + estratto, apre il post).')
+                    ->icon('heroicon-o-bell-alert')
+                    ->schema([
+                        Forms\Components\Toggle::make('send_push')
+                            ->label('Invia notifica push')
+                            ->default(false),
+                    ]),
             ]);
     }
 

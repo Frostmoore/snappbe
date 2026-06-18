@@ -28,6 +28,8 @@ class PostResource extends JsonResource
             'slug' => $this->slug,
             'cover' => $this->coverImageUrl(),
             'min_level' => $this->min_level,
+            // "Riservato" = destinato a un pubblico ristretto (non a tutti).
+            'is_reserved' => $this->audience !== \App\Enums\PushTarget::All,
             'external_url' => $this->external_url,
             'published_at' => $this->published_at?->toIso8601String(),
             'body' => $this->when($this->withBody, fn () => $this->body),

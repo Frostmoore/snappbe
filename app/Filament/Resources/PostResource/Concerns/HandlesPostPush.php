@@ -27,11 +27,10 @@ trait HandlesPostPush
      */
     protected function extractPushConfig(array $data): array
     {
-        foreach (['send_push', 'push_target', 'push_target_level', 'push_target_role', 'push_target_user_ids'] as $key) {
-            if (array_key_exists($key, $data)) {
-                $this->pushConfig[$key] = $data[$key];
-                unset($data[$key]);
-            }
+        // Solo il toggle: i destinatari sono colonne del post (audience*).
+        if (array_key_exists('send_push', $data)) {
+            $this->pushConfig['send_push'] = $data['send_push'];
+            unset($data['send_push']);
         }
 
         return $data;
@@ -49,14 +48,15 @@ trait HandlesPostPush
             $body = 'Nuova comunicazione SNA';
         }
 
+        // La notifica colpisce ESATTAMENTE i destinatari del post (audience).
         $notification = PushNotification::create([
             'title'           => $post->title,
             'body'            => Str::limit($body, 140),
             'deep_link'       => '/posts/'.$post->id,
-            'target'          => $this->pushConfig['push_target'] ?? 'all',
-            'target_level'    => $this->pushConfig['push_target_level'] ?? null,
-            'target_role'     => $this->pushConfig['push_target_role'] ?? null,
-            'target_user_ids' => $this->pushConfig['push_target_user_ids'] ?? null,
+            'target'          => $post->audience->value,
+            'target_level'    => $post->min_level,
+            'target_role'     => $post->audience_role,
+            'target_user_ids' => $post->audience_user_ids,
             'status'          => 'draft',
             'created_by'      => auth()->id(),
         ]);

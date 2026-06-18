@@ -6,7 +6,6 @@ use App\Enums\PostStatus;
 use App\Http\Resources\PostResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Post;
-use App\Services\Access\LevelGate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -47,8 +46,8 @@ class PostController extends Controller
             throw new NotFoundHttpException('Contenuto non trovato.');
         }
 
-        if (! app(LevelGate::class)->canSee($user, $post->min_level)) {
-            return ApiResponse::error('Contenuto riservato a un livello superiore.', status: 403);
+        if (! $post->isVisibleTo($user)) {
+            return ApiResponse::error('Questa comunicazione non è disponibile per il tuo profilo.', status: 403);
         }
 
         return ApiResponse::ok((new PostResource($post))->withBody());
