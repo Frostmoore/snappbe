@@ -52,6 +52,7 @@ trait HandlesPostPush
         $notification = PushNotification::create([
             'title'           => $post->title,
             'body'            => Str::limit($body, 140),
+            'image_url'       => $post->coverImageUrl(), // immagine = copertina del post
             'deep_link'       => '/posts/'.$post->id,
             'target'          => $post->audience->value,
             'target_level'    => $post->min_level,
