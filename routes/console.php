@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 // Riallinea giornalmente i livelli di iscrizione dagli account WP collegati.
 Schedule::command('snapp:sync-levels')->daily();
+
+// Tiene caldi WP + cache articoli/newsletter: il primo accesso non trova mai WP freddo.
+Schedule::command('snapp:warm-articles')->everyMinute()->withoutOverlapping();
