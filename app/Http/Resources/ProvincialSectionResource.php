@@ -13,6 +13,8 @@ class ProvincialSectionResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'text_bold' => $this->text_bold,
+            'text_italic' => $this->text_italic,
             'province' => $this->province,
             'region' => $this->region,
             'address' => $this->address,

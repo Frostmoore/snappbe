@@ -27,7 +27,9 @@ class ProvincialSectionResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\TextInput::make('name')->label('Nome')->required()->maxLength(255),
+            Forms\Components\TextInput::make('name')->label('Nome')->required()->maxLength(255)->columnSpanFull(),
+            Forms\Components\Textarea::make('text_bold')->label('Testo in grassetto (grigio)')->helperText('Mostrato sotto il titolo, in grigio grassetto.')->rows(2)->columnSpanFull(),
+            Forms\Components\Textarea::make('text_italic')->label('Testo in corsivo (grigio)')->helperText('Mostrato sotto il testo precedente, in grigio corsivo.')->rows(2)->columnSpanFull(),
             Forms\Components\TextInput::make('province')->label('Provincia')->maxLength(255),
             Forms\Components\TextInput::make('region')->label('Regione')->maxLength(255),
             Forms\Components\TextInput::make('address')->label('Indirizzo')->maxLength(255)->columnSpanFull(),
