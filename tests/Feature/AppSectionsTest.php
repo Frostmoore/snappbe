@@ -86,6 +86,19 @@ class AppSectionsTest extends TestCase
         $this->getJson('/api/v1/events')->assertStatus(503);
     }
 
+    public function test_events_refresh_bypasses_cache(): void
+    {
+        Cache::flush();
+        $headers = ['X-WP-Total' => '1', 'X-WP-TotalPages' => '1'];
+        Http::fake(['*/snapp/v1/events*' => Http::sequence()
+            ->push([['id' => 1, 'title' => 'Vecchio', 'slug' => 'a']], 200, $headers)
+            ->push([['id' => 2, 'title' => 'Nuovo', 'slug' => 'b']], 200, $headers)]);
+
+        $this->getJson('/api/v1/events')->assertJsonPath('data.0.title', 'Vecchio'); // 1ª chiamata → cache
+        $this->getJson('/api/v1/events')->assertJsonPath('data.0.title', 'Vecchio'); // servita da cache (no 2ª chiamata WP)
+        $this->getJson('/api/v1/events?refresh=1')->assertJsonPath('data.0.title', 'Nuovo'); // bypassa → 2ª risposta WP
+    }
+
     public function test_newsletters_proxy_uses_category(): void
     {
         Http::fake([

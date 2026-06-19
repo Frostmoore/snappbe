@@ -25,13 +25,18 @@ class EventController extends Controller
         $page    = max(1, (int) $request->query('page', 1));
         $perPage = min(50, max(1, (int) $request->query('per_page', 20)));
 
-        $key = EventCache::key("index:p{$page}:pp{$perPage}");
+        $key    = EventCache::key("index:p{$page}:pp{$perPage}");
+        $params = ['page' => $page, 'per_page' => $perPage];
 
         try {
-            $data = Cache::remember($key, EventCache::TTL_SECONDS, fn () => $this->client->events([
-                'page'     => $page,
-                'per_page' => $perPage,
-            ]));
+            // Pull-to-refresh (`?refresh=1`): bypassa la cache e la ripopola con i
+            // dati freschi dal sito, così l'utente vede subito le modifiche.
+            if ($request->boolean('refresh')) {
+                $data = $this->client->events($params);
+                Cache::put($key, $data, EventCache::TTL_SECONDS);
+            } else {
+                $data = Cache::remember($key, EventCache::TTL_SECONDS, fn () => $this->client->events($params));
+            }
         } catch (WordPressUnavailableException $e) {
             return ApiResponse::error('Servizio eventi non disponibile.', status: 503);
         }
