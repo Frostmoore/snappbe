@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\WordPress\ArticleCache;
+use App\Services\WordPress\EventCache;
 use App\Services\WordPress\WordPressClient;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -36,6 +37,14 @@ class WarmArticleCache extends Command
                 // Un errore WP non deve far fallire il task schedulato.
                 $this->warn('warm fallito per '.$key.': '.$e->getMessage());
             }
+        }
+
+        // Eventi (proxy WP): stessa key/params del controller + app (pagina 1, per_page 20).
+        try {
+            $eventsKey = EventCache::key('index:p1:pp20');
+            Cache::put($eventsKey, $client->events(['page' => 1, 'per_page' => 20]), EventCache::TTL_SECONDS);
+        } catch (\Throwable $e) {
+            $this->warn('warm eventi fallito: '.$e->getMessage());
         }
 
         return self::SUCCESS;

@@ -3,7 +3,6 @@
 namespace App\Filament\Widgets;
 
 use App\Filament\Pages\ManageAppSettings;
-use App\Filament\Resources\EventResource;
 use App\Filament\Resources\MagazineIssueResource;
 use App\Filament\Resources\OrgChartMemberResource;
 use App\Filament\Resources\PartnerResource;
@@ -11,7 +10,6 @@ use App\Filament\Resources\PostResource;
 use App\Filament\Resources\ProvincialSectionResource;
 use App\Filament\Resources\PushNotificationResource;
 use App\Filament\Resources\SocialLinkResource;
-use App\Models\Event;
 use App\Models\MagazineIssue;
 use App\Models\OrgChartMember;
 use App\Models\Partner;
@@ -75,12 +73,6 @@ class SectionsOverview extends StatsOverviewWidget
                 ->descriptionIcon('heroicon-m-users')
                 ->color('info')
                 ->url(OrgChartMemberResource::getUrl()),
-
-            Stat::make('Eventi', Event::count())
-                ->description('Con registrazione')
-                ->descriptionIcon('heroicon-m-calendar-days')
-                ->color('success')
-                ->url(EventResource::getUrl()),
 
             Stat::make('Post in-app', Post::count())
                 ->description('Contenuti nativi')

@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\Event;
 use App\Models\MagazineIssue;
 use App\Models\OrgChartMember;
 use App\Models\Partner;
 use App\Models\ProvincialSection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -55,14 +55,35 @@ class AppSectionsTest extends TestCase
             ->assertJsonPath('data.0.children.0.name', 'Vice');
     }
 
-    public function test_events_list_and_show(): void
+    public function test_events_list_and_show_proxy_wp(): void
     {
-        $pub = Event::create(['title' => 'Convegno', 'slug' => 'convegno', 'starts_at' => now()->addDay(), 'is_published' => true]);
-        $draft = Event::create(['title' => 'Bozza', 'slug' => 'bozza', 'starts_at' => now()->addDay(), 'is_published' => false]);
+        Cache::flush();
+        Http::fake([
+            '*/snapp/v1/events/99' => Http::response(null, 404),
+            '*/snapp/v1/events/7' => Http::response([
+                'id' => 7, 'title' => 'Convegno', 'slug' => 'convegno', 'link' => 'https://sna.test/convegno',
+                'image' => null, 'address' => 'Via Roma 1', 'starts_at' => now()->addDay()->toIso8601String(),
+                'region' => 'Lazio', 'province' => 'Roma', 'description' => 'Dettagli', 'type' => 'formativo', 'type_label' => 'Formativo',
+            ], 200),
+            '*/snapp/v1/events*' => Http::response([
+                ['id' => 7, 'title' => 'Convegno', 'slug' => 'convegno', 'link' => 'https://sna.test/convegno', 'type' => 'formativo', 'type_label' => 'Formativo', 'region' => 'Lazio', 'province' => 'Roma'],
+            ], 200, ['X-WP-Total' => '1', 'X-WP-TotalPages' => '1']),
+        ]);
 
-        $this->getJson('/api/v1/events')->assertOk()->assertJsonCount(1, 'data');
-        $this->getJson("/api/v1/events/{$pub->id}")->assertOk()->assertJsonPath('data.slug', 'convegno');
-        $this->getJson("/api/v1/events/{$draft->id}")->assertStatus(404);
+        $this->getJson('/api/v1/events')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.type', 'formativo');
+        $this->getJson('/api/v1/events/7')->assertOk()
+            ->assertJsonPath('data.slug', 'convegno')
+            ->assertJsonPath('data.location', 'Via Roma 1')
+            ->assertJsonPath('data.registration_url', 'https://sna.test/convegno');
+        $this->getJson('/api/v1/events/99')->assertStatus(404);
+    }
+
+    public function test_events_503_when_wp_down(): void
+    {
+        Cache::flush();
+        Http::fake(['*/snapp/v1/events*' => Http::response('boom', 500)]);
+
+        $this->getJson('/api/v1/events')->assertStatus(503);
     }
 
     public function test_newsletters_proxy_uses_category(): void

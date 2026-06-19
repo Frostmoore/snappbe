@@ -77,6 +77,54 @@ class WordPressClient
     }
 
     /**
+     * Elenco eventi normalizzati + metadati di paginazione (header X-WP-*).
+     * Gli eventi sono PAGINE WP marcate "È un evento" nel plugin.
+     *
+     * @return array{items: array<int,array>, total: int, total_pages: int}
+     */
+    public function events(array $params): array
+    {
+        try {
+            $response = $this->http()->get('/events', array_filter([
+                'page'     => $params['page'] ?? 1,
+                'per_page' => $params['per_page'] ?? 20,
+            ], fn ($v) => $v !== null && $v !== ''));
+        } catch (Throwable $e) {
+            throw new WordPressUnavailableException('WordPress non raggiungibile.', 0, $e);
+        }
+
+        if ($response->failed()) {
+            throw new WordPressUnavailableException('Errore dal sito WordPress: ' . $response->status());
+        }
+
+        return [
+            'items'       => $response->json() ?? [],
+            'total'       => (int) $response->header('X-WP-Total'),
+            'total_pages' => (int) $response->header('X-WP-TotalPages'),
+        ];
+    }
+
+    /** Singolo evento; null se 404. */
+    public function event(int $id): ?array
+    {
+        try {
+            $response = $this->http()->get('/events/' . $id);
+        } catch (Throwable $e) {
+            throw new WordPressUnavailableException('WordPress non raggiungibile.', 0, $e);
+        }
+
+        if ($response->status() === 404) {
+            return null;
+        }
+
+        if ($response->failed()) {
+            throw new WordPressUnavailableException('Errore dal sito WordPress: ' . $response->status());
+        }
+
+        return $response->json();
+    }
+
+    /**
      * Bridge di verifica account WP (firmato HMAC). Autentica identifier + password.
      * Null se l'account non esiste (404); InvalidWpCredentialsException se la password
      * è errata (401).
