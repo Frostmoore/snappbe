@@ -10,7 +10,7 @@ class ProvincialSection extends Model
     use HasSectionDefaults;
 
     protected $fillable = [
-        'name', 'text_bold', 'text_italic', 'province', 'region', 'address', 'email', 'phone', 'website', 'notes',
+        'name', 'body', 'province', 'region', 'address', 'email', 'phone', 'website', 'notes',
         'sort_order', 'is_active',
     ];
 
