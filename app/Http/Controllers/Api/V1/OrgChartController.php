@@ -4,38 +4,66 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Responses\ApiResponse;
 use App\Models\OrgChartMember;
+use App\Models\OrgChartSection;
 use Illuminate\Http\JsonResponse;
 
 class OrgChartController extends Controller
 {
     /**
      * Organigramma raggruppato per SEZIONE (come sul sito): ogni gruppo ha un
-     * titolo e la lista dei membri. L'ordine dei gruppi segue il `sort_order`
-     * (il gruppo del membro con sort_order più basso compare per primo); i membri
-     * dentro al gruppo sono ordinati per `sort_order`.
+     * titolo, una descrizione e la lista dei membri. L'ordine dei gruppi e le
+     * descrizioni vengono da `org_chart_sections`; i membri vi appartengono per
+     * `group` = titolo della sezione, ordinati per `sort_order`.
      */
     public function index(): JsonResponse
     {
-        $members = OrgChartMember::query()
+        $sections = OrgChartSection::query()
             ->where('is_active', true)
             ->orderBy('sort_order')->orderBy('id')
             ->get();
 
-        $groups = [];
-        foreach ($members as $m) {
-            $title = trim((string) $m->group) !== '' ? $m->group : 'Altri';
-            $groups[$title][] = [
-                'id'    => $m->id,
-                'name'  => $m->name,
-                'role'  => $m->role,
-                'photo' => $m->photoUrl(),
-                'email' => $m->email,
+        $byGroup = OrgChartMember::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')->orderBy('id')
+            ->get()
+            ->groupBy('group');
+
+        $map = static fn ($members) => $members->map(fn ($m) => [
+            'id'    => $m->id,
+            'name'  => $m->name,
+            'role'  => $m->role,
+            'photo' => $m->photoUrl(),
+            'email' => $m->email,
+        ])->values()->all();
+
+        $data = [];
+        $used = [];
+
+        // Sezioni gestite (con descrizione e ordine), solo se hanno membri.
+        foreach ($sections as $s) {
+            $members = $byGroup->get($s->title);
+            if (! $members || $members->isEmpty()) {
+                continue;
+            }
+            $used[] = $s->title;
+            $data[] = [
+                'group'       => $s->title,
+                'description' => $s->description,
+                'members'     => $map($members),
             ];
         }
 
-        $data = [];
-        foreach ($groups as $title => $list) {
-            $data[] = ['group' => $title, 'members' => $list];
+        // Eventuali gruppi senza sezione corrispondente (in coda, senza descrizione).
+        foreach ($byGroup as $group => $members) {
+            $title = trim((string) $group) !== '' ? (string) $group : 'Altri';
+            if (in_array($title, $used, true)) {
+                continue;
+            }
+            $data[] = [
+                'group'       => $title,
+                'description' => null,
+                'members'     => $map($members),
+            ];
         }
 
         return ApiResponse::ok($data);

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\MagazineIssue;
 use App\Models\OrgChartMember;
+use App\Models\OrgChartSection;
 use App\Models\Partner;
 use App\Models\ProvincialSection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -43,8 +44,11 @@ class AppSectionsTest extends TestCase
         $this->getJson('/api/v1/magazine-issues')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.title', 'N.1');
     }
 
-    public function test_org_chart_grouped_by_section(): void
+    public function test_org_chart_grouped_by_section_with_description(): void
     {
+        OrgChartSection::create(['title' => 'Direzione', 'description' => 'Guida la struttura.', 'sort_order' => 0, 'is_active' => true]);
+        OrgChartSection::create(['title' => 'Ufficio Legale', 'sort_order' => 10, 'is_active' => true]);
+
         OrgChartMember::create(['name' => 'Andrea', 'group' => 'Direzione', 'role' => 'Direttore', 'is_active' => true, 'sort_order' => 0]);
         OrgChartMember::create(['name' => 'Alberto', 'group' => 'Ufficio Legale', 'is_active' => true, 'sort_order' => 10]);
         OrgChartMember::create(['name' => 'Gianluigi', 'group' => 'Ufficio Legale', 'is_active' => true, 'sort_order' => 11]);
@@ -54,10 +58,12 @@ class AppSectionsTest extends TestCase
             ->assertOk()
             ->assertJsonCount(2, 'data')
             ->assertJsonPath('data.0.group', 'Direzione')
+            ->assertJsonPath('data.0.description', 'Guida la struttura.')
             ->assertJsonPath('data.0.members.0.name', 'Andrea')
             ->assertJsonPath('data.0.members.0.role', 'Direttore')
             ->assertJsonCount(1, 'data.0.members') // il membro non attivo è escluso
             ->assertJsonPath('data.1.group', 'Ufficio Legale')
+            ->assertJsonPath('data.1.description', null)
             ->assertJsonCount(2, 'data.1.members');
     }
 

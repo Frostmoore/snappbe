@@ -27,11 +27,11 @@ class OrgChartMemberResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\TextInput::make('group')
+            Forms\Components\Select::make('group')
                 ->label('Sezione')
-                ->helperText('Es. Direzione, Ufficio Legale… (i membri sono raggruppati per sezione)')
-                ->datalist(fn () => OrgChartMember::query()->whereNotNull('group')->distinct()->orderBy('group')->pluck('group')->all())
-                ->maxLength(255)
+                ->helperText('I membri sono raggruppati per sezione. Gestisci titoli/descrizioni in "Organigramma — Sezioni".')
+                ->options(fn () => \App\Models\OrgChartSection::query()->orderBy('sort_order')->pluck('title', 'title'))
+                ->searchable()
                 ->columnSpanFull(),
             Forms\Components\TextInput::make('name')->label('Nome')->required()->maxLength(255),
             Forms\Components\TextInput::make('role')->label('Ruolo')->maxLength(255),
