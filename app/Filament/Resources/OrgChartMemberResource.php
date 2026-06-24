@@ -35,7 +35,7 @@ class OrgChartMemberResource extends Resource
                 ->columnSpanFull(),
             Forms\Components\TextInput::make('name')->label('Nome')->required()->maxLength(255),
             Forms\Components\TextInput::make('role')->label('Ruolo')->maxLength(255),
-            Forms\Components\Textarea::make('note')->label('Testo libero')->helperText('Mostrato sotto il ruolo nell\'app.')->rows(2)->columnSpanFull(),
+            Forms\Components\RichEditor::make('note')->label('Testo libero')->helperText('Se valorizzato, la card si espande per mostrarlo (rich text).')->columnSpanFull(),
             Forms\Components\TextInput::make('link')->label('Link')->url()->maxLength(500)->helperText('Se valorizzato, toccando la card si apre questo link.')->columnSpanFull(),
             Forms\Components\TextInput::make('email')->label('Email')->email()->maxLength(255),
             Forms\Components\FileUpload::make('photo_path')->label('Foto')->image()->avatar()->disk('public')->directory('org')->visibility('public')->maxSize(4096),
