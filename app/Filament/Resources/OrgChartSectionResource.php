@@ -27,6 +27,11 @@ class OrgChartSectionResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
+            Forms\Components\TextInput::make('subtitle')
+                ->label('Sottotitolo (eyebrow)')
+                ->helperText('Mostrato sopra il titolo, in maiuscoletto tra le bande oro (come "LINK SOCIAL").')
+                ->maxLength(255)
+                ->columnSpanFull(),
             Forms\Components\TextInput::make('title')
                 ->label('Titolo sezione')
                 ->required()->maxLength(255)

@@ -48,6 +48,7 @@ class OrgChartController extends Controller
             $used[] = $s->title;
             $data[] = [
                 'group'       => $s->title,
+                'subtitle'    => $s->subtitle,
                 'description' => $s->description,
                 'members'     => $map($members),
             ];
@@ -61,6 +62,7 @@ class OrgChartController extends Controller
             }
             $data[] = [
                 'group'       => $title,
+                'subtitle'    => null,
                 'description' => null,
                 'members'     => $map($members),
             ];
