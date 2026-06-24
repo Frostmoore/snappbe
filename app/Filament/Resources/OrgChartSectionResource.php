@@ -37,10 +37,9 @@ class OrgChartSectionResource extends Resource
                 ->required()->maxLength(255)
                 ->helperText('Deve combaciare con la "Sezione" assegnata ai membri (es. Direzione).')
                 ->columnSpanFull(),
-            Forms\Components\Textarea::make('description')
+            Forms\Components\RichEditor::make('description')
                 ->label('Descrizione')
-                ->helperText('Testo mostrato sotto il titolo della sezione nell\'app (come sul sito).')
-                ->rows(4)
+                ->helperText('Testo (rich) mostrato sotto il titolo della sezione nell\'app.')
                 ->columnSpanFull(),
             Forms\Components\TextInput::make('sort_order')->label('Ordine')->numeric()->default(0),
             Forms\Components\Toggle::make('is_active')->label('Attiva')->default(true),
