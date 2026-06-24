@@ -32,6 +32,8 @@ class OrgChartController extends Controller
             'id'    => $m->id,
             'name'  => $m->name,
             'role'  => $m->role,
+            'note'  => $m->note,
+            'link'  => $m->link,
             'photo' => $m->photoUrl(),
             'email' => $m->email,
         ])->values()->all();
