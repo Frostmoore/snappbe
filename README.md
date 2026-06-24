@@ -1,59 +1,94 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# SNAPP — Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+API REST e pannello di amministrazione dell'app **SNAPP**. Espone i dati al client mobile, gestisce autenticazione e notifiche e si integra con un sito di contenuti esterno.
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Laravel 12** (PHP **8.2+**)
+- **Laravel Sanctum** — autenticazione a token
+- **Laravel Socialite** + **firebase/php-jwt** — login social (Google/Apple)
+- **Filament v3** — pannello di amministrazione
+- **Redis** (code e cache) via `predis/predis`
+- **MariaDB / MySQL**
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Architettura
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Il backend fa da ponte tra tre sistemi: l'app mobile, il pannello di amministrazione e un sito di contenuti esterno.
 
-## Learning Laravel
+I contenuti già pubblicati sul sito esterno (articoli, newsletter, eventi) **non vengono duplicati** nel database: sono esposti all'app in tempo reale attraverso un livello di proxy con cache a breve durata, mantenuta calda in background per evitare latenze quando la sorgente risponde "a freddo". La comunicazione server-to-server con la sorgente avviene su un canale autenticato.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Il resto dei contenuti è nativo e gestito dal pannello. L'invio delle notifiche push è incapsulato dietro un'astrazione indipendente dal provider, con selezione del pubblico (tutti, per livello d'iscrizione, per ruolo o per singoli utenti) ed elaborazione in coda.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Requisiti
 
-## Laravel Sponsors
+- PHP 8.2+ con estensione `intl`
+- Composer
+- MariaDB/MySQL
+- Redis
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Installazione
 
-### Premium Partners
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Configurazione
 
-## Contributing
+Le impostazioni si definiscono in `.env`. I gruppi principali:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- **Database** (`DB_*`)
+- **Mailer SMTP** (`MAIL_*`)
+- **Cache e code** (`CACHE_STORE`, `QUEUE_CONNECTION`, `REDIS_*`)
+- **Credenziali OAuth** (Google / Apple)
+- **Provider notifiche push**
+- **Parametri di integrazione con la sorgente di contenuti esterna**
 
-## Code of Conduct
+I valori non sono versionati: vanno impostati per ogni ambiente.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Avvio (sviluppo)
 
-## Security Vulnerabilities
+```bash
+php artisan serve            # API
+php artisan queue:work       # elaborazione code (notifiche, email)
+php artisan schedule:work    # task schedulati
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Pannello di amministrazione: `/admin`.
 
-## License
+## Test
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+php artisan test
+```
+
+La suite di feature test copre i flussi principali: autenticazione e login social, esposizione dei contenuti della sorgente esterna (con HTTP simulato), visibilità dei contenuti per profilo e invio delle notifiche.
+
+## Struttura
+
+```
+app/
+  Http/           # controller delle API e middleware
+  Models/         # modelli Eloquent
+  Services/       # logica applicativa e integrazioni esterne
+  Filament/       # risorse del pannello di amministrazione
+  Notifications/
+database/         # migrazioni e seeder
+routes/           # definizione delle rotte
+tests/            # feature e unit test
+```
+
+## Funzionalità
+
+- Registrazione, verifica email, login e reset password.
+- Login social (Google/Apple) con verifica del token lato server.
+- Notifiche push verso il client, con selezione del pubblico e deep-link.
+- Esposizione in tempo reale dei contenuti della sorgente esterna (articoli, newsletter, eventi).
+- Gestione dei contenuti dell'app dal pannello: contenuti per profilo, eventi, organigramma, area riservata e sezioni informative.
+
+## Note
+
+- Client mobile: repository **snappfe**.
+- Credenziali, chiavi e segreti non sono inclusi nel repository e vanno configurati per ogni ambiente.
