@@ -43,16 +43,22 @@ class AppSectionsTest extends TestCase
         $this->getJson('/api/v1/magazine-issues')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.title', 'N.1');
     }
 
-    public function test_org_chart_returns_tree(): void
+    public function test_org_chart_grouped_by_section(): void
     {
-        $boss = OrgChartMember::create(['name' => 'Presidente', 'is_active' => true, 'sort_order' => 0]);
-        OrgChartMember::create(['name' => 'Vice', 'parent_id' => $boss->id, 'is_active' => true, 'sort_order' => 0]);
+        OrgChartMember::create(['name' => 'Andrea', 'group' => 'Direzione', 'role' => 'Direttore', 'is_active' => true, 'sort_order' => 0]);
+        OrgChartMember::create(['name' => 'Alberto', 'group' => 'Ufficio Legale', 'is_active' => true, 'sort_order' => 10]);
+        OrgChartMember::create(['name' => 'Gianluigi', 'group' => 'Ufficio Legale', 'is_active' => true, 'sort_order' => 11]);
+        OrgChartMember::create(['name' => 'Nascosto', 'group' => 'Direzione', 'is_active' => false, 'sort_order' => 1]);
 
         $this->getJson('/api/v1/org-chart')
             ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.name', 'Presidente')
-            ->assertJsonPath('data.0.children.0.name', 'Vice');
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.group', 'Direzione')
+            ->assertJsonPath('data.0.members.0.name', 'Andrea')
+            ->assertJsonPath('data.0.members.0.role', 'Direttore')
+            ->assertJsonCount(1, 'data.0.members') // il membro non attivo è escluso
+            ->assertJsonPath('data.1.group', 'Ufficio Legale')
+            ->assertJsonCount(2, 'data.1.members');
     }
 
     public function test_events_list_and_show_proxy_wp(): void

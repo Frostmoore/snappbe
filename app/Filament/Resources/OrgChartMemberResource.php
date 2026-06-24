@@ -27,10 +27,12 @@ class OrgChartMemberResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Select::make('parent_id')
-                ->label('Superiore (nessuno = vertice)')
-                ->relationship('parent', 'name', fn ($query, ?OrgChartMember $record) => $record ? $query->whereKeyNot($record->id) : $query)
-                ->searchable()->preload(),
+            Forms\Components\TextInput::make('group')
+                ->label('Sezione')
+                ->helperText('Es. Direzione, Ufficio Legale… (i membri sono raggruppati per sezione)')
+                ->datalist(fn () => OrgChartMember::query()->whereNotNull('group')->distinct()->orderBy('group')->pluck('group')->all())
+                ->maxLength(255)
+                ->columnSpanFull(),
             Forms\Components\TextInput::make('name')->label('Nome')->required()->maxLength(255),
             Forms\Components\TextInput::make('role')->label('Ruolo')->maxLength(255),
             Forms\Components\TextInput::make('email')->label('Email')->email()->maxLength(255),
@@ -46,9 +48,9 @@ class OrgChartMemberResource extends Resource
             ->defaultSort('sort_order')
             ->columns([
                 Tables\Columns\ImageColumn::make('photo_path')->label('Foto')->circular()->disk('public'),
+                Tables\Columns\TextColumn::make('group')->label('Sezione')->placeholder('— (Altri)')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('name')->label('Nome')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('role')->label('Ruolo')->placeholder('—'),
-                Tables\Columns\TextColumn::make('parent.name')->label('Superiore')->placeholder('— (vertice)'),
                 Tables\Columns\IconColumn::make('is_active')->label('Attivo')->boolean(),
             ])
             ->actions([Tables\Actions\EditAction::make()])

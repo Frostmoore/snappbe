@@ -13,7 +13,7 @@ class OrgChartMember extends Model
     use HasSectionDefaults;
 
     protected $fillable = [
-        'parent_id', 'name', 'role', 'photo_path', 'email', 'sort_order', 'is_active',
+        'parent_id', 'name', 'group', 'role', 'photo_path', 'email', 'sort_order', 'is_active',
     ];
 
     protected function casts(): array
