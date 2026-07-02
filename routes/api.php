@@ -34,6 +34,7 @@ Route::prefix('v1')->group(function () {
     Route::get('partners', [\App\Http\Controllers\Api\V1\PartnerController::class, 'index']);
     Route::get('magazine-issues', [\App\Http\Controllers\Api\V1\MagazineIssueController::class, 'index']);
     Route::get('org-chart', [\App\Http\Controllers\Api\V1\OrgChartController::class, 'index']);
+    Route::get('documents', [\App\Http\Controllers\Api\V1\DocumentController::class, 'index']);
     Route::get('events', [\App\Http\Controllers\Api\V1\EventController::class, 'index']);
     Route::get('events/{id}', [\App\Http\Controllers\Api\V1\EventController::class, 'show'])->whereNumber('id');
 
